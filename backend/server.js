@@ -2,6 +2,7 @@ const express = require('express');
 const mongoose = require('mongoose');
 const cors = require('cors');
 require('dotenv').config();
+require('./auto-shutdown'); // Auto-shutdown after 2 hours
 
 const authRoutes = require('./routes/auth');
 const umbrellaRoutes = require('./routes/umbrellas');
