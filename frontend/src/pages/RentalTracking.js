@@ -1,6 +1,7 @@
 import React, { useState, useEffect } from 'react';
 import { useNavigate } from 'react-router-dom';
 import Navbar from '../components/Navbar';
+import TrackingMap from '../components/TrackingMap';
 import { useAuth } from '../services/AuthContext';
 import api from '../services/api';
 
@@ -20,12 +21,6 @@ const RentalTracking = () => {
     return () => clearInterval(timer);
   }, []);
 
-  useEffect(() => {
-    if (selectedRental?.umbrella?.location && window.google) {
-      initMap();
-    }
-  }, [selectedRental]);
-
   const fetchActiveRentals = async () => {
     try {
       const response = await api.get('/rentals/active');
@@ -39,47 +34,6 @@ const RentalTracking = () => {
     } finally {
       setLoading(false);
     }
-  };
-
-  const initMap = () => {
-    if (!selectedRental?.umbrella?.location) return;
-    const { latitude, longitude } = selectedRental.umbrella.location;
-    
-    const map = new window.google.maps.Map(document.getElementById('map'), {
-      zoom: 18,
-      center: { lat: parseFloat(latitude), lng: parseFloat(longitude) },
-      mapTypeId: 'hybrid'
-    });
-
-    new window.google.maps.Marker({
-      position: { lat: parseFloat(latitude), lng: parseFloat(longitude) },
-      map: map,
-      title: `${selectedRental.umbrella.umbrellaId} - ${selectedRental.umbrella.location.address}`,
-      icon: {
-        url: 'data:image/svg+xml;charset=UTF-8,' + encodeURIComponent(`
-          <svg width="40" height="40" viewBox="0 0 40 40" xmlns="http://www.w3.org/2000/svg">
-            <circle cx="20" cy="20" r="18" fill="#3b82f6" stroke="white" stroke-width="2"/>
-            <text x="20" y="26" text-anchor="middle" fill="white" font-size="20">☂</text>
-          </svg>
-        `),
-        scaledSize: new window.google.maps.Size(40, 40)
-      }
-    });
-
-    const campusBounds = new window.google.maps.Rectangle({
-      bounds: {
-        north: 30.7600,
-        south: 30.7575,
-        east: 76.5690,
-        west: 76.5660
-      },
-      strokeColor: '#10b981',
-      strokeOpacity: 0.8,
-      strokeWeight: 2,
-      fillColor: '#10b981',
-      fillOpacity: 0.1,
-      map: map
-    });
   };
 
   const calculateDuration = () => {
@@ -158,10 +112,10 @@ const RentalTracking = () => {
   const [selectedDropOffLocation, setSelectedDropOffLocation] = useState(null);
   const [campusLocations] = useState([
     { name: 'Main Gate', address: 'Main Gate, Chandigarh University', lat: 30.7590, lng: 76.5675 },
-    { name: 'Library', address: 'Central Library, Chandigarh University', lat: 30.7585, lng: 76.5680 },
-    { name: 'Cafeteria', address: 'Student Cafeteria, Chandigarh University', lat: 30.7580, lng: 76.5670 },
+    { name: 'Central Library', address: 'Central Library, Chandigarh University', lat: 30.7585, lng: 76.5680 },
+    { name: 'Food Court', address: 'Food Court, Chandigarh University', lat: 30.7580, lng: 76.5670 },
     { name: 'Sports Complex', address: 'Sports Complex, Chandigarh University', lat: 30.7595, lng: 76.5685 },
-    { name: 'Hostel Block A', address: 'Hostel Block A, Chandigarh University', lat: 30.7575, lng: 76.5665 }
+    { name: 'Boys Hostel', address: 'Boys Hostel, Chandigarh University', lat: 30.7575, lng: 76.5665 }
   ]);
 
   const handleEndRental = () => {
@@ -475,14 +429,7 @@ const RentalTracking = () => {
             <div style={{ marginBottom: '12px', padding: '8px 12px', background: '#f0fdf4', borderRadius: '6px' }}>
               <strong>🌐 GPS Coordinates:</strong> {selectedRental?.umbrella?.location?.latitude || 'N/A'}, {selectedRental?.umbrella?.location?.longitude || 'N/A'}
             </div>
-            <div 
-              id="map" 
-              style={{ 
-                height: '300px', 
-                borderRadius: '8px',
-                border: '1px solid #e5e7eb'
-              }}
-            ></div>
+            <TrackingMap rental={selectedRental} />
           </div>
 
           <div className="card" style={{ marginTop: '20px' }}>

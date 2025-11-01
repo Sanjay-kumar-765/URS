@@ -33,7 +33,7 @@ const generateUmbrellas = () => {
           location: {
             latitude: baseLatitude + (Math.random() * 0.0001),
             longitude: baseLongitude + (Math.random() * 0.0001),
-            address: `${location} - Chandigarh University`
+            address: `${location}, Chandigarh University`
           }
         });
         umbrellaCounter++;
@@ -47,10 +47,9 @@ const generateUmbrellas = () => {
 const sampleUmbrellas = generateUmbrellas();
 const colors = ['red', 'blue', 'yellow', 'black', 'green'];
 const locations = [
-  'Main Gate', 'Central Library', 'Engineering Block', 'Student Activity Center', 'Boys Hostel Block A',
-  'Food Court', 'Sports Complex', 'Administrative Block', 'Girls Hostel Block B', 'Medical Center',
-  'Computer Science Block', 'Main Auditorium', 'Parking Area Gate 2', 'Faculty Residence', 'Business School',
-  'Pharmacy Block', 'Law School', 'Architecture Block', 'Laboratory Complex', 'Research Center'
+  'Main Gate', 'Central Library', 'Engineering Block', 'Student Activity Center', 'Boys Hostel',
+  'Food Court', 'Sports Complex', 'Administrative Block', 'Girls Hostel', 'Medical Center',
+  'Computer Science Block', 'Main Auditorium', 'Parking Area', 'Faculty Residence', 'Business School'
 ];
 
 const sampleUsers = [
