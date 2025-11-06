@@ -77,4 +77,39 @@ router.get('/profile', auth, async (req, res) => {
   }
 });
 
+// Mock Google login for testing
+router.post('/google-mock', async (req, res) => {
+  try {
+    const { email, name } = req.body;
+    
+    let user = await User.findOne({ email });
+    
+    if (!user) {
+      user = new User({
+        email,
+        googleId: 'mock_google_id',
+        walletBalance: 0,
+        depositMade: false,
+        cashbackReceived: false
+      });
+      await user.save();
+    }
+    
+    const token = jwt.sign({ userId: user._id }, process.env.JWT_SECRET || 'secret');
+    
+    res.json({
+      token,
+      user: {
+        id: user._id,
+        email: user.email,
+        walletBalance: user.walletBalance,
+        depositMade: user.depositMade,
+        cashbackReceived: user.cashbackReceived
+      }
+    });
+  } catch (error) {
+    res.status(400).json({ message: 'Google authentication failed' });
+  }
+});
+
 module.exports = router;

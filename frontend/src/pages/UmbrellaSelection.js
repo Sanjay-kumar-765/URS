@@ -116,7 +116,7 @@ const UmbrellaSelection = () => {
       <div className="container">
         <div className="card">
           <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '20px' }}>
-            <h2 style={{ color: '#1f2937' }}>☂️ Umbrella Hunt! Find Your Perfect Match</h2>
+            <h2 style={{ color: '#1f2937' }}>Available Umbrellas</h2>
             <div style={{ display: 'flex', gap: '12px', alignItems: 'center' }}>
               <div style={{ display: 'flex', gap: '4px', background: '#f3f4f6', borderRadius: '8px', padding: '4px' }}>
                 <button
@@ -161,7 +161,7 @@ const UmbrellaSelection = () => {
                     {selectedUmbrellas.length} in your cart
                   </span>
                   <button className="btn btn-success" onClick={handleRentSelected}>
-                    🎉 Grab These ({selectedUmbrellas.length})!
+                    Rent Selected ({selectedUmbrellas.length})
                   </button>
                 </>
               )}
@@ -191,7 +191,7 @@ const UmbrellaSelection = () => {
           <div style={{ marginBottom: '20px' }}>
             <div className="grid grid-2" style={{ gap: '16px' }}>
               <div>
-                <h3 style={{ marginBottom: '12px', color: '#374151' }}>🎨 Pick Your Vibe:</h3>
+                <h3 style={{ marginBottom: '12px', color: '#374151' }}>Filter by Color:</h3>
                 <div style={{ display: 'flex', gap: '8px', flexWrap: 'wrap' }}>
                   <button
                     onClick={() => setSelectedColor('')}
@@ -231,7 +231,7 @@ const UmbrellaSelection = () => {
               </div>
               
               <div>
-                <h3 style={{ marginBottom: '12px', color: '#374151' }}>📍 Where are you at?</h3>
+                <h3 style={{ marginBottom: '12px', color: '#374151' }}>Select Location:</h3>
                 <div style={{ display: 'flex', gap: '8px', flexWrap: 'wrap' }}>
                   <button
                     onClick={() => setSelectedLocation('')}
@@ -296,7 +296,7 @@ const UmbrellaSelection = () => {
           ) : (
             filteredUmbrellas.length === 0 ? (
               <div className="card text-center" style={{ background: '#f9fafb' }}>
-                <h3 style={{ color: '#6b7280', marginBottom: '8px' }}>Oops! Nothing here right now 😅</h3>
+                <h3 style={{ color: '#6b7280', marginBottom: '8px' }}>No Umbrellas Available</h3>
                 <p style={{ color: '#6b7280' }}>
                   {selectedColor || selectedLocation 
                     ? `Hmm, no ${selectedColor || ''} umbrellas ${selectedLocation ? `at ${selectedLocation}` : ''} available. Try different filters?` 
@@ -314,7 +314,7 @@ const UmbrellaSelection = () => {
                     cursor: 'pointer'
                   }}
                 >
-                  Show me everything!
+                  Clear Filters
                 </button>
               </div>
             ) : (
@@ -393,7 +393,7 @@ const UmbrellaSelection = () => {
                         color: selectedUmbrellas.includes(umbrella._id) ? '#667eea' : '#6b7280',
                         fontWeight: selectedUmbrellas.includes(umbrella._id) ? '600' : '400'
                       }}>
-                        {selectedUmbrellas.includes(umbrella._id) ? 'Got it!' : 'Pick me!'}
+                        {selectedUmbrellas.includes(umbrella._id) ? 'Selected' : 'Select'}
                       </span>
                     </div>
                   </div>

@@ -307,9 +307,9 @@ const RentalTracking = () => {
         <Navbar />
         <div className="container">
           <div className="card text-center">
-            <h2 style={{ color: '#6b7280', marginBottom: '16px' }}>Nothing to track! 🤷‍♂️</h2>
+            <h2 style={{ color: '#6b7280', marginBottom: '16px' }}>No Active Rentals</h2>
             <p style={{ color: '#6b7280', marginBottom: '20px' }}>
-              Looks like you're umbrella-free right now. Time to grab one?
+              You don't have any active umbrella rentals.
             </p>
             <button 
               className="btn btn-primary"
@@ -331,11 +331,11 @@ const RentalTracking = () => {
       <Navbar />
       <div className="container">
         <div className="card">
-          <h2 style={{ marginBottom: '20px', color: '#1f2937' }}>📍 Where's My Umbrella?</h2>
+          <h2 style={{ marginBottom: '20px', color: '#1f2937' }}>Rental Tracking</h2>
           
           {activeRentals.length > 1 && (
             <div className="card" style={{ marginBottom: '20px' }}>
-              <h3 style={{ marginBottom: '16px', color: '#1f2937' }}>🔄 Which one do you want to check?</h3>
+              <h3 style={{ marginBottom: '16px', color: '#1f2937' }}>Select Rental to Track:</h3>
               <div style={{ display: 'grid', gap: '8px' }}>
                 {activeRentals.map((rental) => (
                   <button

@@ -31,9 +31,34 @@ const Login = () => {
     }
   };
 
-  const handleGoogleLogin = () => {
-    // Implement Google OAuth
-    alert('Google login will be implemented with OAuth');
+  const handleGoogleLogin = async () => {
+    try {
+      // Mock Google login for now
+      const mockGoogleUser = {
+        email: 'user@gmail.com',
+        name: 'Google User'
+      };
+      
+      const result = await fetch('http://localhost:5000/api/auth/google-mock', {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json'
+        },
+        body: JSON.stringify(mockGoogleUser)
+      });
+      
+      const data = await result.json();
+      
+      if (result.ok) {
+        localStorage.setItem('token', data.token);
+        navigate('/dashboard');
+        window.location.reload();
+      } else {
+        alert(data.message || 'Google login failed');
+      }
+    } catch (error) {
+      alert('Google login failed');
+    }
   };
 
   return (
@@ -103,7 +128,7 @@ const Login = () => {
             boxShadow: '0 8px 20px rgba(219, 68, 55, 0.3)'
           }}
         >
-          🔍 Quick login with Google
+          Continue with Google
         </button>
 
         <div className="text-center">
