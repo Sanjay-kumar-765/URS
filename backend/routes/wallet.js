@@ -74,7 +74,7 @@ router.post('/verify-deposit', auth, async (req, res) => {
       description: `Wallet deposit via ${paymentMethod || 'Card'}`
     }).save();
     
-    // Emit real-time update
+    // Emit real-time updates
     if (global.io) {
       global.io.emit('newTransaction', {
         id: transaction._id,
@@ -82,6 +82,10 @@ router.post('/verify-deposit', auth, async (req, res) => {
         amount: transaction.amount,
         user: user.email,
         createdAt: transaction.createdAt
+      });
+      global.io.emit('walletUpdate', {
+        userId: user._id,
+        newBalance: user.walletBalance
       });
     }
 
@@ -91,10 +95,13 @@ router.post('/verify-deposit', auth, async (req, res) => {
   }
 });
 
-// Get transaction history
+// Get detailed transaction history
 router.get('/transactions', auth, async (req, res) => {
   try {
-    const transactions = await Transaction.find({ user: req.user._id }).sort({ createdAt: -1 });
+    const transactions = await Transaction.find({ user: req.user._id })
+      .populate('umbrella', 'umbrellaId color location')
+      .populate('rental', 'startTime endTime duration')
+      .sort({ createdAt: -1 });
     res.json(transactions);
   } catch (error) {
     res.status(500).json({ message: error.message });

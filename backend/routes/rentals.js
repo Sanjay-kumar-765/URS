@@ -32,6 +32,20 @@ router.post('/start', auth, async (req, res) => {
     umbrella.isAvailable = false;
     umbrella.currentRental = rental._id;
     await umbrella.save();
+    
+    // Emit real-time updates
+    if (global.io) {
+      global.io.emit('newRental', {
+        id: rental._id,
+        user: user.email,
+        umbrellaId: umbrella.umbrellaId,
+        createdAt: rental.createdAt
+      });
+      global.io.emit('umbrellaUpdate', {
+        id: umbrella._id,
+        isAvailable: false
+      });
+    }
 
     res.status(201).json(rental);
   } catch (error) {
@@ -108,12 +122,27 @@ router.post('/:id/pay', auth, async (req, res) => {
     await rental.save();
     
     // Record transaction
-    await new Transaction({
+    const transaction = await new Transaction({
       user: user._id,
       type: 'rental',
       amount: -currentCost,
       description: `Rental payment for ${rental.umbrella.umbrellaId} via ${paymentMethod || 'Card'}`
     }).save();
+    
+    // Emit real-time updates
+    if (global.io) {
+      global.io.emit('newTransaction', {
+        id: transaction._id,
+        type: transaction.type,
+        amount: transaction.amount,
+        user: user.email,
+        createdAt: transaction.createdAt
+      });
+      global.io.emit('walletUpdate', {
+        userId: user._id,
+        newBalance: user.walletBalance
+      });
+    }
 
     res.json({ 
       message: 'Payment successful, umbrella unlocked', 
@@ -172,12 +201,18 @@ router.post('/pay-all', auth, async (req, res) => {
       await rental.save();
       updatedRentals.push(rental);
       
-      // Record individual transactions
+      // Record detailed individual transactions
+      const hours = Math.ceil((new Date() - rental.startTime) / (1000 * 60 * 60));
       await new Transaction({
         user: user._id,
         type: 'rental',
         amount: -cost,
-        description: `Rental payment for ${rental.umbrella.umbrellaId} via ${paymentMethod || 'Card'}`
+        description: `Rental payment for ${rental.umbrella.umbrellaId} via ${paymentMethod || 'Card'}`,
+        umbrella: rental.umbrella._id,
+        rental: rental._id,
+        duration: hours,
+        rentalStartTime: rental.startTime,
+        rentalEndTime: new Date()
       }).save();
     }
 
@@ -224,6 +259,21 @@ router.post('/:id/end', auth, async (req, res) => {
     umbrella.isAvailable = true;
     umbrella.currentRental = null;
     await umbrella.save();
+    
+    // Emit real-time updates
+    if (global.io) {
+      global.io.emit('rentalEnded', {
+        id: rental._id,
+        umbrellaId: umbrella.umbrellaId,
+        user: user.email,
+        endTime: rental.endTime
+      });
+      global.io.emit('umbrellaUpdate', {
+        id: umbrella._id,
+        isAvailable: true,
+        location: umbrella.location
+      });
+    }
 
     // Update user rental history (wallet already deducted during payment)
     const user = await User.findById(rental.user._id);

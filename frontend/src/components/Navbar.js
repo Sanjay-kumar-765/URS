@@ -14,23 +14,26 @@ const Navbar = () => {
   return (
     <nav className="navbar">
       <div style={{ display: 'flex', alignItems: 'center', gap: '24px' }}>
-        <h2 className="gradient-text" style={{ fontSize: '1.8rem', fontWeight: '800' }}>
+        <h2 
+          className="gradient-text" 
+          style={{ fontSize: '1.8rem', fontWeight: '800', cursor: 'pointer' }}
+          onClick={() => navigate('/dashboard')}
+        >
           ☂️ RainShield
         </h2>
-        <div className="wallet-balance">
+        <div 
+          className="wallet-balance" 
+          style={{ cursor: 'pointer' }}
+          onClick={() => navigate('/wallet')}
+        >
           👛 ₹{user?.walletBalance || 0}
         </div>
       </div>
       <div style={{ display: 'flex', gap: '12px', alignItems: 'center' }}>
-        <button className="btn btn-primary" onClick={() => navigate('/dashboard')}>
-          🏠 Home
-        </button>
         <button className="btn btn-success" onClick={() => navigate('/umbrellas')}>
           ☂️ Find Umbrellas
         </button>
-        <button className="btn btn-primary" onClick={() => navigate('/wallet')}>
-          💳 My Wallet
-        </button>
+
         <button className="btn" style={{ background: '#6b7280', color: 'white' }} onClick={() => navigate('/profile')}>
           👤 Profile
         </button>
