@@ -1,7 +1,7 @@
 import React, { useState, useEffect } from 'react';
 import { BrowserRouter as Router, Routes, Route, Navigate } from 'react-router-dom';
 import SplashScreen from './components/SplashScreen';
-import LiveUpdates from './components/LiveUpdates';
+
 import Login from './pages/Login';
 import Dashboard from './pages/Dashboard';
 import UmbrellaSelection from './pages/UmbrellaSelection';
@@ -24,7 +24,6 @@ function App() {
     <AuthProvider>
       <Router>
         <div className="App">
-
           <Routes>
             <Route path="/login" element={<Login />} />
             <Route path="/dashboard" element={<ProtectedRoute><Dashboard /></ProtectedRoute>} />

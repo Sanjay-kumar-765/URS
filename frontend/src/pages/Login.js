@@ -39,7 +39,7 @@ const Login = () => {
         name: 'Google User'
       };
       
-      const result = await fetch('http://localhost:5000/api/auth/google-mock', {
+      const result = await fetch(`${process.env.REACT_APP_API_URL}/auth/google-mock`, {
         method: 'POST',
         headers: {
           'Content-Type': 'application/json'

@@ -4,7 +4,7 @@ const cors = require('cors');
 const { createServer } = require('http');
 const { Server } = require('socket.io');
 require('dotenv').config();
-// require('./auto-shutdown'); // Auto-shutdown after 2 hours - DISABLED
+// require('./auto-shutdown'); // Auto-shutdown after 2 hours
 
 const authRoutes = require('./routes/auth');
 const umbrellaRoutes = require('./routes/umbrellas');
