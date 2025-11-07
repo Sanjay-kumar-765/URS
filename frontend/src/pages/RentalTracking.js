@@ -14,12 +14,33 @@ const RentalTracking = () => {
   const [loading, setLoading] = useState(true);
   const [showPaymentModal, setShowPaymentModal] = useState(false);
   const [paymentLoading, setPaymentLoading] = useState(false);
+  const [showDropOffModal, setShowDropOffModal] = useState(false);
+  const [selectedDropOffLocation, setSelectedDropOffLocation] = useState(null);
+  const [selectedUmbrellasForDropOff, setSelectedUmbrellasForDropOff] = useState([]);
+  const [campusLocations] = useState([
+    { name: 'Main Gate', address: 'Main Gate, Chandigarh University', lat: 30.7590, lng: 76.5675 },
+    { name: 'Central Library', address: 'Central Library, Chandigarh University', lat: 30.7585, lng: 76.5680 },
+    { name: 'Food Court', address: 'Food Court, Chandigarh University', lat: 30.7580, lng: 76.5670 },
+    { name: 'Sports Complex', address: 'Sports Complex, Chandigarh University', lat: 30.7595, lng: 76.5685 },
+    { name: 'Boys Hostel', address: 'Boys Hostel, Chandigarh University', lat: 30.7575, lng: 76.5665 }
+  ]);
 
   useEffect(() => {
     fetchActiveRentals();
     const timer = setInterval(() => setCurrentTime(new Date()), 1000);
     return () => clearInterval(timer);
   }, []);
+
+  useEffect(() => {
+    if (showDropOffModal || showPaymentModal) {
+      document.body.style.overflow = 'hidden';
+    } else {
+      document.body.style.overflow = 'unset';
+    }
+    return () => {
+      document.body.style.overflow = 'unset';
+    };
+  }, [showDropOffModal, showPaymentModal]);
 
   const fetchActiveRentals = async () => {
     try {
@@ -108,18 +129,16 @@ const RentalTracking = () => {
     }
   };
 
-  const [showDropOffModal, setShowDropOffModal] = useState(false);
-  const [selectedDropOffLocation, setSelectedDropOffLocation] = useState(null);
-  const [campusLocations] = useState([
-    { name: 'Main Gate', address: 'Main Gate, Chandigarh University', lat: 30.7590, lng: 76.5675 },
-    { name: 'Central Library', address: 'Central Library, Chandigarh University', lat: 30.7585, lng: 76.5680 },
-    { name: 'Food Court', address: 'Food Court, Chandigarh University', lat: 30.7580, lng: 76.5670 },
-    { name: 'Sports Complex', address: 'Sports Complex, Chandigarh University', lat: 30.7595, lng: 76.5685 },
-    { name: 'Boys Hostel', address: 'Boys Hostel, Chandigarh University', lat: 30.7575, lng: 76.5665 }
-  ]);
-
   const handleEndRental = () => {
     if (!selectedRental) return;
+    setSelectedUmbrellasForDropOff([selectedRental._id]);
+    setShowDropOffModal(true);
+  };
+
+  const handleEndMultipleRentals = () => {
+    const unlockedRentals = activeRentals.filter(r => r.unlocked);
+    if (unlockedRentals.length === 0) return;
+    setSelectedUmbrellasForDropOff(unlockedRentals.map(r => r._id));
     setShowDropOffModal(true);
   };
 
@@ -128,23 +147,39 @@ const RentalTracking = () => {
       alert('Please select a drop-off location');
       return;
     }
+    if (selectedUmbrellasForDropOff.length === 0) {
+      alert('Please select at least one umbrella to drop off');
+      return;
+    }
     
     try {
-      const response = await api.post(`/rentals/${selectedRental._id}/end`, {
-        dropOffLocation: {
-          address: selectedDropOffLocation.address,
-          latitude: selectedDropOffLocation.lat,
-          longitude: selectedDropOffLocation.lng
-        }
-      });
-      const { rental } = response.data;
+      const dropOffData = {
+        address: selectedDropOffLocation.address,
+        latitude: selectedDropOffLocation.lat,
+        longitude: selectedDropOffLocation.lng
+      };
+
+      if (selectedUmbrellasForDropOff.length === 1) {
+        const response = await api.post(`/rentals/${selectedUmbrellasForDropOff[0]}/end`, {
+          dropOffLocation: dropOffData
+        });
+        const { rental } = response.data;
+        alert(`Rental ended! Umbrella dropped at ${selectedDropOffLocation.name}. Total cost: ₹${rental.totalAmount}`);
+      } else {
+        const promises = selectedUmbrellasForDropOff.map(rentalId => 
+          api.post(`/rentals/${rentalId}/end`, { dropOffLocation: dropOffData })
+        );
+        await Promise.all(promises);
+        alert(`${selectedUmbrellasForDropOff.length} umbrellas dropped at ${selectedDropOffLocation.name}`);
+      }
       
-      alert(`Rental ended! Umbrella dropped at ${selectedDropOffLocation.name}. Total cost: ₹${rental.totalAmount}`);
       setShowDropOffModal(false);
       setSelectedDropOffLocation(null);
-      fetchActiveRentals();
+      setSelectedUmbrellasForDropOff([]);
+      navigate('/dashboard');
     } catch (error) {
-      alert('Failed to end rental');
+      console.error('End rental error:', error);
+      alert(error.response?.data?.message || 'Failed to end rental');
     }
   };
 
@@ -210,43 +245,97 @@ const RentalTracking = () => {
   };
 
   const DropOffModal = () => {
-    if (!showDropOffModal || !selectedRental) return null;
+    if (!showDropOffModal) return null;
+    const unlockedRentals = activeRentals.filter(r => r.unlocked);
     
     return (
-      <div style={{
-        position: 'fixed',
-        top: 0,
-        left: 0,
-        right: 0,
-        bottom: 0,
-        background: 'rgba(0,0,0,0.5)',
-        display: 'flex',
-        justifyContent: 'center',
-        alignItems: 'center',
-        zIndex: 1000
-      }}>
-        <div className="card" style={{ width: '500px', maxWidth: '90vw' }}>
-          <h3 style={{ marginBottom: '20px' }}>Where are you dropping the umbrella?</h3>
+      <div 
+        style={{
+          position: 'fixed',
+          top: 0,
+          left: 0,
+          right: 0,
+          bottom: 0,
+          background: 'rgba(0,0,0,0.5)',
+          display: 'flex',
+          justifyContent: 'center',
+          alignItems: 'center',
+          zIndex: 1000,
+          overflowY: 'auto',
+          padding: '20px'
+        }}
+        onClick={(e) => {
+          if (e.target === e.currentTarget) {
+            setShowDropOffModal(false);
+            setSelectedDropOffLocation(null);
+            setSelectedUmbrellasForDropOff([]);
+          }
+        }}
+      >
+        <div className="card" style={{ width: '600px', maxWidth: '100%', margin: 'auto' }}>
+          <h3 style={{ marginBottom: '20px' }}>Drop Off Umbrellas</h3>
           
-          <div style={{ display: 'grid', gap: '12px', marginBottom: '20px' }}>
-            {campusLocations.map((location, index) => (
+          {unlockedRentals.length > 1 && (
+            <div style={{ marginBottom: '20px' }}>
+              <h4 style={{ marginBottom: '12px', fontSize: '1rem' }}>Select Umbrellas to Drop:</h4>
+              <div style={{ display: 'grid', gap: '8px', maxHeight: '200px', overflowY: 'auto', padding: '4px' }}>
+                {unlockedRentals.map((rental) => (
+                  <label
+                    key={rental._id}
+                    style={{
+                      display: 'flex',
+                      alignItems: 'center',
+                      gap: '12px',
+                      padding: '10px',
+                      border: selectedUmbrellasForDropOff.includes(rental._id) ? '2px solid #667eea' : '1px solid #e5e7eb',
+                      borderRadius: '8px',
+                      background: selectedUmbrellasForDropOff.includes(rental._id) ? '#f0f9ff' : 'white',
+                      cursor: 'pointer'
+                    }}
+                  >
+                    <input
+                      type="checkbox"
+                      checked={selectedUmbrellasForDropOff.includes(rental._id)}
+                      onChange={(e) => {
+                        if (e.target.checked) {
+                          setSelectedUmbrellasForDropOff([...selectedUmbrellasForDropOff, rental._id]);
+                        } else {
+                          setSelectedUmbrellasForDropOff(selectedUmbrellasForDropOff.filter(id => id !== rental._id));
+                        }
+                      }}
+                      style={{ width: '18px', height: '18px', accentColor: '#667eea', flexShrink: 0 }}
+                    />
+                    <div>
+                      <div style={{ fontWeight: 'bold', fontSize: '0.9rem' }}>{rental.umbrella?.umbrellaId}</div>
+                      <div style={{ fontSize: '0.8rem', color: '#6b7280', textTransform: 'capitalize' }}>{rental.umbrella?.color}</div>
+                    </div>
+                  </label>
+                ))}
+              </div>
+            </div>
+          )}
+
+          <h4 style={{ marginBottom: '12px', fontSize: '1rem' }}>Select Drop-off Location:</h4>
+          <div style={{ display: 'grid', gap: '10px', marginBottom: '20px', maxHeight: '250px', overflowY: 'auto', padding: '4px' }}>
+            {campusLocations.map((location) => (
               <button
                 key={location.name}
                 className="btn"
                 style={{ 
                   background: selectedDropOffLocation?.name === location.name ? '#3b82f6' : '#f3f4f6',
                   color: selectedDropOffLocation?.name === location.name ? 'white' : '#1f2937',
-                  padding: '16px', 
+                  padding: '12px', 
                   textAlign: 'left',
-                  border: selectedDropOffLocation?.name === location.name ? '2px solid #3b82f6' : '1px solid #e5e7eb'
+                  border: selectedDropOffLocation?.name === location.name ? '2px solid #3b82f6' : '1px solid #e5e7eb',
+                  minHeight: 'auto'
                 }}
                 onClick={() => setSelectedDropOffLocation(location)}
               >
-                <div style={{ display: 'flex', alignItems: 'center', gap: '12px' }}>
-                  <span style={{ fontSize: '1.5rem' }}>📍</span>
+                <div style={{ display: 'flex', alignItems: 'center', gap: '10px' }}>
+                  <span style={{ fontSize: '1.2rem' }}>📍</span>
                   <div>
-                    <div style={{ fontWeight: 'bold' }}>{location.name}</div>
-                    <div style={{ fontSize: '0.9rem', opacity: 0.8 }}>{location.address}</div>
+                    <div style={{ fontWeight: 'bold', fontSize: '0.9rem' }}>{location.name}</div>
+                    <div style={{ fontSize: '0.8rem', opacity: 0.8 }}>{location.address}</div>
                   </div>
                 </div>
               </button>
@@ -258,9 +347,9 @@ const RentalTracking = () => {
               className="btn btn-primary"
               style={{ flex: 1 }}
               onClick={confirmEndRental}
-              disabled={!selectedDropOffLocation}
+              disabled={!selectedDropOffLocation || selectedUmbrellasForDropOff.length === 0}
             >
-              Drop Umbrella Here
+              Drop {selectedUmbrellasForDropOff.length} Umbrella{selectedUmbrellasForDropOff.length !== 1 ? 's' : ''} Here
             </button>
             <button
               className="btn"
@@ -268,6 +357,7 @@ const RentalTracking = () => {
               onClick={() => {
                 setShowDropOffModal(false);
                 setSelectedDropOffLocation(null);
+                setSelectedUmbrellasForDropOff([]);
               }}
             >
               Cancel
@@ -357,90 +447,63 @@ const RentalTracking = () => {
             </div>
           )}
           
-          <div className="grid grid-2">
-            <div className="card" style={{ background: '#f0f9ff', border: '1px solid #0ea5e9' }}>
-              <h3 style={{ color: '#0c4a6e', marginBottom: '12px' }}>☂️ Your Umbrella</h3>
-              <div style={{ marginBottom: '8px' }}>
-                <strong>ID:</strong> {selectedRental?.umbrella?.umbrellaId || 'N/A'}
+          <div style={{ display: 'grid', gridTemplateColumns: 'repeat(2, 1fr)', gap: '20px' }}>
+            <div>
+              <div className="card" style={{ background: '#f0f9ff', border: '1px solid #0ea5e9', marginBottom: '20px' }}>
+                <h3 style={{ color: '#0c4a6e', marginBottom: '12px' }}>Umbrella Details</h3>
+                <div style={{ marginBottom: '8px' }}>
+                  <strong>ID:</strong> {selectedRental?.umbrella?.umbrellaId || 'N/A'}
+                </div>
+                <div style={{ marginBottom: '8px' }}>
+                  <strong>Color:</strong> {selectedRental?.umbrella?.color || 'N/A'}
+                </div>
+                <div style={{ marginBottom: '8px' }}>
+                  <strong>Status:</strong> 
+                  <span style={{ 
+                    color: selectedRental?.unlocked ? '#10b981' : '#f59e0b',
+                    fontWeight: 'bold',
+                    marginLeft: '8px'
+                  }}>
+                    {selectedRental?.unlocked ? 'Unlocked' : 'Locked'}
+                  </span>
+                </div>
               </div>
-              <div style={{ marginBottom: '8px' }}>
-                <strong>Color:</strong> {selectedRental?.umbrella?.color || 'N/A'}
-              </div>
-              <div style={{ marginBottom: '8px' }}>
-                <strong>Status:</strong> 
-                <span style={{ 
-                  color: selectedRental?.unlocked ? '#10b981' : '#f59e0b',
-                  fontWeight: 'bold',
-                  marginLeft: '8px'
-                }}>
-                  {selectedRental?.unlocked ? '🔓 Unlocked' : '🔒 Locked'}
-                </span>
+
+              <div className="card" style={{ background: '#f0fdf4', border: '1px solid #10b981' }}>
+                <h3 style={{ color: '#065f46', marginBottom: '12px' }}>Time & Cost</h3>
+                <div style={{ fontSize: '1.5rem', fontWeight: 'bold', color: '#065f46', marginBottom: '8px' }}>
+                  {hours}h {minutes}m
+                </div>
+                <div style={{ marginBottom: '8px' }}>
+                  <strong>Started:</strong> {selectedRental ? new Date(selectedRental.startTime).toLocaleString() : 'N/A'}
+                </div>
+                <div style={{ fontSize: '1.2rem', fontWeight: 'bold', color: '#065f46' }}>
+                  Current Cost: ₹{currentCost}
+                </div>
               </div>
             </div>
 
-            <div className="card" style={{ background: '#f0fdf4', border: '1px solid #10b981' }}>
-              <h3 style={{ color: '#065f46', marginBottom: '12px' }}>⏱️ Time & Money</h3>
-              <div style={{ fontSize: '1.5rem', fontWeight: 'bold', color: '#065f46', marginBottom: '8px' }}>
-                {hours}h {minutes}m
+            <div className="card">
+              <h3 style={{ marginBottom: '16px', color: '#1f2937' }}>Location</h3>
+              <div style={{ marginBottom: '12px', padding: '8px 12px', background: '#f0f9ff', borderRadius: '6px' }}>
+                <strong>Address:</strong> {selectedRental?.umbrella?.location?.address || 'Chandigarh University Campus'}
               </div>
-              <div style={{ marginBottom: '8px' }}>
-                <strong>Started:</strong> {selectedRental ? new Date(selectedRental.startTime).toLocaleString() : 'N/A'}
+              <div style={{ marginBottom: '12px', padding: '8px 12px', background: '#f0fdf4', borderRadius: '6px' }}>
+                <strong>Coordinates:</strong> {selectedRental?.umbrella?.location?.latitude || 'N/A'}, {selectedRental?.umbrella?.location?.longitude || 'N/A'}
               </div>
-              <div style={{ fontSize: '1.2rem', fontWeight: 'bold', color: '#065f46' }}>
-                You owe: ₹{currentCost}
-              </div>
+              <TrackingMap rental={selectedRental} />
             </div>
           </div>
 
-          {activeRentals.filter(r => !r.unlocked).length > 0 && (
-            <div className="card" style={{ background: '#fef3c7', border: '1px solid #f59e0b', marginTop: '20px' }}>
-              <h3 style={{ color: '#92400e', marginBottom: '12px' }}>💳 Payment Required</h3>
-              <p style={{ color: '#92400e', marginBottom: '16px' }}>
-                {activeRentals.filter(r => !r.unlocked).length === 1 
-                  ? 'Please complete payment to unlock your umbrella.' 
-                  : `You have ${activeRentals.filter(r => !r.unlocked).length} unpaid umbrellas.`}
-              </p>
-              <div style={{ display: 'flex', gap: '12px', flexWrap: 'wrap' }}>
-                {selectedRental && !selectedRental.unlocked && (
-                  <button 
-                    className="btn btn-primary"
-                    onClick={handlePayment}
-                  >
-                    Pay ₹{currentCost} & Unlock This
-                  </button>
-                )}
-                {activeRentals.filter(r => !r.unlocked).length > 1 && (
-                  <button 
-                    className="btn btn-success"
-                    onClick={handlePayAllRentals}
-                  >
-                    Pay All & Unlock ({activeRentals.filter(r => !r.unlocked).length})
-                  </button>
-                )}
-              </div>
-            </div>
-          )}
-
           <div className="card" style={{ marginTop: '20px' }}>
-            <h3 style={{ marginBottom: '16px', color: '#1f2937' }}>🗺️ Where is it right now?</h3>
-            <div style={{ marginBottom: '12px', padding: '8px 12px', background: '#f0f9ff', borderRadius: '6px' }}>
-              <strong>📍 Current Location:</strong> {selectedRental?.umbrella?.location?.address || 'Chandigarh University Campus'}
-            </div>
-            <div style={{ marginBottom: '12px', padding: '8px 12px', background: '#f0fdf4', borderRadius: '6px' }}>
-              <strong>🌐 GPS Coordinates:</strong> {selectedRental?.umbrella?.location?.latitude || 'N/A'}, {selectedRental?.umbrella?.location?.longitude || 'N/A'}
-            </div>
-            <TrackingMap rental={selectedRental} />
-          </div>
-
-          <div className="card" style={{ marginTop: '20px' }}>
-            <h3 style={{ marginBottom: '16px', color: '#1f2937' }}>🎯 What do you want to do?</h3>
+            <h3 style={{ marginBottom: '16px', color: '#1f2937' }}>Actions</h3>
             <div style={{ display: 'flex', gap: '12px', flexWrap: 'wrap' }}>
               {selectedRental && !selectedRental.unlocked && (
                 <button 
                   className="btn btn-primary"
                   onClick={handlePayment}
                 >
-                  💳 Pay & Unlock This
+                  Pay ₹{currentCost} & Unlock
                 </button>
               )}
               
@@ -449,7 +512,7 @@ const RentalTracking = () => {
                   className="btn btn-success"
                   onClick={handlePayAllRentals}
                 >
-                  🚀 Pay & Unlock All ({activeRentals.filter(r => !r.unlocked).length})
+                  Pay All ({activeRentals.filter(r => !r.unlocked).length})
                 </button>
               )}
               
@@ -459,7 +522,17 @@ const RentalTracking = () => {
                   style={{ background: '#ef4444', color: 'white' }}
                   onClick={handleEndRental}
                 >
-                  🏁 End Rental
+                  End This Rental
+                </button>
+              )}
+              
+              {activeRentals.filter(r => r.unlocked).length > 1 && (
+                <button 
+                  className="btn"
+                  style={{ background: '#dc2626', color: 'white' }}
+                  onClick={handleEndMultipleRentals}
+                >
+                  End Multiple ({activeRentals.filter(r => r.unlocked).length})
                 </button>
               )}
               
@@ -468,7 +541,7 @@ const RentalTracking = () => {
                 style={{ background: '#6b7280', color: 'white' }}
                 onClick={() => navigate('/dashboard')}
               >
-                🏠 Back to Dashboard
+                Back to Dashboard
               </button>
             </div>
           </div>

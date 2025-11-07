@@ -107,7 +107,11 @@ async function seedDatabase() {
     users.forEach(user => {
       transactions.push(
         { user: user._id, type: 'deposit', amount: 300, description: 'Initial deposit' },
-        { user: user._id, type: 'cashback', amount: 100, description: 'First deposit cashback' }
+        { user: user._id, type: 'cashback', amount: 100, description: 'First deposit cashback' },
+        { user: user._id, type: 'deposit', amount: 500, description: 'Second deposit via UPI' },
+        { user: user._id, type: 'rental', amount: -21, description: 'Umbrella rental payment' },
+        { user: user._id, type: 'deposit', amount: 200, description: 'Top-up via Card' },
+        { user: user._id, type: 'rental', amount: -35, description: 'Extended rental payment' }
       );
     });
     await Transaction.insertMany(transactions);
@@ -167,6 +171,7 @@ async function seedDatabase() {
     console.log(`👥 Added ${users.length} sample users with rental history`);
     console.log(`📋 Added ${createdRentals.length} rental records`);
     console.log(`💳 Added ${transactions.length + rentalTransactions.length} transactions`);
+    console.log('📊 Transaction breakdown: deposits, cashbacks, rentals, and top-ups');
     
     process.exit(0);
   } catch (error) {

@@ -95,12 +95,11 @@ router.post('/verify-deposit', auth, async (req, res) => {
   }
 });
 
-// Get detailed transaction history
+// Get transaction history with user details
 router.get('/transactions', auth, async (req, res) => {
   try {
     const transactions = await Transaction.find({ user: req.user._id })
-      .populate('umbrella', 'umbrellaId color location')
-      .populate('rental', 'startTime endTime duration')
+      .populate('user', 'email phone')
       .sort({ createdAt: -1 });
     res.json(transactions);
   } catch (error) {

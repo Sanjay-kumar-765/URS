@@ -263,6 +263,11 @@ const Wallet = () => {
                             {transaction.description}
                           </div>
                         )}
+                        {transaction.user && transaction.user.email && (
+                          <div style={{ fontSize: '0.875rem', color: '#667eea', fontWeight: '500' }}>
+                            User: {transaction.user.email}
+                          </div>
+                        )}
                       </div>
                     </div>
                     <div style={{ 

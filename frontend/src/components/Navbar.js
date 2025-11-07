@@ -28,6 +28,9 @@ const Navbar = () => {
         >
           👛 ₹{user?.walletBalance || 0}
         </div>
+        <button className="btn btn-primary" onClick={() => navigate('/tracking')}>
+          📍 Track
+        </button>
       </div>
       <div style={{ display: 'flex', gap: '12px', alignItems: 'center' }}>
         <button className="btn btn-success" onClick={() => navigate('/umbrellas')}>

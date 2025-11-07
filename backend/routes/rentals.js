@@ -260,6 +260,9 @@ router.post('/:id/end', auth, async (req, res) => {
     umbrella.currentRental = null;
     await umbrella.save();
     
+    // Update user rental history (wallet already deducted during payment)
+    const user = await User.findById(rental.user._id);
+    
     // Emit real-time updates
     if (global.io) {
       global.io.emit('rentalEnded', {
@@ -274,9 +277,6 @@ router.post('/:id/end', auth, async (req, res) => {
         location: umbrella.location
       });
     }
-
-    // Update user rental history (wallet already deducted during payment)
-    const user = await User.findById(rental.user._id);
     user.rentalHistory.push(rental._id);
     await user.save();
 
