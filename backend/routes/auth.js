@@ -62,7 +62,8 @@ router.post('/login', async (req, res) => {
         walletBalance: user.walletBalance,
         rentalHistory: user.rentalHistory,
         depositMade: user.depositMade,
-        cashbackReceived: user.cashbackReceived
+        cashbackReceived: user.cashbackReceived,
+        createdAt: user.createdAt
       } 
     });
   } catch (error) {
@@ -123,7 +124,8 @@ router.put('/profile', auth, async (req, res) => {
         phone: user.phone,
         walletBalance: user.walletBalance,
         depositMade: user.depositMade,
-        cashbackReceived: user.cashbackReceived
+        cashbackReceived: user.cashbackReceived,
+        createdAt: user.createdAt
       } 
     });
   } catch (error) {
