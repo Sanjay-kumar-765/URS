@@ -44,24 +44,46 @@ router.post('/verify-deposit', auth, async (req, res) => {
       user.cashbackReceived = true;
       
       // Record cashback transaction
-      await new Transaction({
+      const cashbackTransaction = await new Transaction({
         user: user._id,
         type: 'cashback',
         amount: 100,
         description: 'First deposit cashback'
       }).save();
+      
+      // Emit real-time update
+      if (global.io) {
+        global.io.emit('newTransaction', {
+          id: cashbackTransaction._id,
+          type: cashbackTransaction.type,
+          amount: cashbackTransaction.amount,
+          user: user.email,
+          createdAt: cashbackTransaction.createdAt
+        });
+      }
     }
     
     await user.save();
 
     // Record deposit transaction
-    await new Transaction({
+    const transaction = await new Transaction({
       user: user._id,
       type: 'deposit',
       amount,
       paymentId,
       description: `Wallet deposit via ${paymentMethod || 'Card'}`
     }).save();
+    
+    // Emit real-time update
+    if (global.io) {
+      global.io.emit('newTransaction', {
+        id: transaction._id,
+        type: transaction.type,
+        amount: transaction.amount,
+        user: user.email,
+        createdAt: transaction.createdAt
+      });
+    }
 
     res.json({ walletBalance: user.walletBalance, message: 'Deposit successful' });
   } catch (error) {

@@ -31,6 +31,9 @@ const Navbar = () => {
         <button className="btn btn-primary" onClick={() => navigate('/wallet')}>
           💳 My Wallet
         </button>
+        <button className="btn" style={{ background: '#6b7280', color: 'white' }} onClick={() => navigate('/profile')}>
+          👤 Profile
+        </button>
         <button 
           className="btn" 
           onClick={handleLogout} 

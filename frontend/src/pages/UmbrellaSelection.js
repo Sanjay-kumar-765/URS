@@ -15,6 +15,7 @@ const UmbrellaSelection = () => {
   const [selectedUmbrellas, setSelectedUmbrellas] = useState([]);
   const [loading, setLoading] = useState(true);
   const [viewMode, setViewMode] = useState('grid'); // 'grid' or 'map'
+  const [sortBy, setSortBy] = useState('name'); // 'name', 'location', 'recent'
 
   const colors = ['red', 'blue', 'yellow', 'black', 'green'];
   const umbrellaImages = {
@@ -37,7 +38,7 @@ const UmbrellaSelection = () => {
 
   useEffect(() => {
     filterUmbrellas();
-  }, [umbrellas, selectedColor, selectedLocation]);
+  }, [umbrellas, selectedColor, selectedLocation, sortBy]);
 
   const fetchUmbrellas = async () => {
     try {
@@ -60,6 +61,20 @@ const UmbrellaSelection = () => {
     if (selectedLocation) {
       filtered = filtered.filter(u => u.location?.address?.includes(selectedLocation));
     }
+    
+    // Sort umbrellas
+    filtered.sort((a, b) => {
+      switch (sortBy) {
+        case 'name':
+          return a.umbrellaId.localeCompare(b.umbrellaId);
+        case 'location':
+          return (a.location?.address || '').localeCompare(b.location?.address || '');
+        case 'recent':
+          return new Date(b.updatedAt || b.createdAt) - new Date(a.updatedAt || a.createdAt);
+        default:
+          return 0;
+      }
+    });
     
     setFilteredUmbrellas(filtered);
   };
@@ -189,6 +204,33 @@ const UmbrellaSelection = () => {
           )}
 
           <div style={{ marginBottom: '20px' }}>
+            <div style={{ marginBottom: '16px' }}>
+              <h3 style={{ marginBottom: '12px', color: '#374151' }}>Sort by:</h3>
+              <div style={{ display: 'flex', gap: '8px', flexWrap: 'wrap' }}>
+                {[
+                  { value: 'name', label: 'Name (A-Z)' },
+                  { value: 'location', label: 'Location' },
+                  { value: 'recent', label: 'Recently Added' }
+                ].map((option) => (
+                  <button
+                    key={option.value}
+                    onClick={() => setSortBy(option.value)}
+                    style={{
+                      padding: '8px 16px',
+                      border: '1px solid #d1d5db',
+                      borderRadius: '20px',
+                      background: sortBy === option.value ? '#667eea' : 'white',
+                      color: sortBy === option.value ? 'white' : '#374151',
+                      cursor: 'pointer',
+                      fontSize: '12px'
+                    }}
+                  >
+                    {option.label}
+                  </button>
+                ))}
+              </div>
+            </div>
+            
             <div className="grid grid-2" style={{ gap: '16px' }}>
               <div>
                 <h3 style={{ marginBottom: '12px', color: '#374151' }}>Filter by Color:</h3>
