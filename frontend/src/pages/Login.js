@@ -1,6 +1,8 @@
 import React, { useState } from 'react';
 import { useNavigate } from 'react-router-dom';
+import { GoogleLogin } from '@react-oauth/google';
 import { useAuth } from '../services/AuthContext';
+import api from '../services/api';
 
 const Login = () => {
   const [isLogin, setIsLogin] = useState(true);
@@ -31,34 +33,22 @@ const Login = () => {
     }
   };
 
-  const handleGoogleLogin = async () => {
+  const handleGoogleSuccess = async (credentialResponse) => {
     try {
-      // Mock Google login for now
-      const mockGoogleUser = {
-        email: 'user@gmail.com',
-        name: 'Google User'
-      };
-      
-      const result = await fetch(`${process.env.REACT_APP_API_URL}/auth/google-mock`, {
-        method: 'POST',
-        headers: {
-          'Content-Type': 'application/json'
-        },
-        body: JSON.stringify(mockGoogleUser)
+      const { data } = await api.post('/auth/google', {
+        credential: credentialResponse.credential
       });
       
-      const data = await result.json();
-      
-      if (result.ok) {
-        localStorage.setItem('token', data.token);
-        navigate('/dashboard');
-        window.location.reload();
-      } else {
-        alert(data.message || 'Google login failed');
-      }
+      localStorage.setItem('token', data.token);
+      navigate('/dashboard');
+      window.location.reload();
     } catch (error) {
-      alert('Google login failed');
+      alert(error.response?.data?.message || 'Google login failed');
     }
+  };
+
+  const handleGoogleError = () => {
+    alert('Google login failed. Please try again.');
   };
 
   return (
@@ -117,19 +107,17 @@ const Login = () => {
 
         <div style={{ margin: '20px 0', textAlign: 'center', color: '#6b7280' }}>OR</div>
 
-        <button 
-          onClick={handleGoogleLogin}
-          className="btn"
-          style={{ 
-            width: '100%', 
-            background: 'linear-gradient(135deg, #db4437 0%, #c23321 100%)', 
-            color: 'white', 
-            marginBottom: '20px',
-            boxShadow: '0 8px 20px rgba(219, 68, 55, 0.3)'
-          }}
-        >
-          Continue with Google
-        </button>
+        <div style={{ display: 'flex', justifyContent: 'center', marginBottom: '20px' }}>
+          <GoogleLogin
+            onSuccess={handleGoogleSuccess}
+            onError={handleGoogleError}
+            useOneTap
+            theme="filled_blue"
+            size="large"
+            text="continue_with"
+            shape="rectangular"
+          />
+        </div>
 
         <div className="text-center">
           <button
