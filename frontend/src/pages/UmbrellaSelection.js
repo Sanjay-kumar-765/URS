@@ -130,9 +130,9 @@ const UmbrellaSelection = () => {
       <Navbar />
       <div className="container">
         <div className="card">
-          <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '20px' }}>
-            <h2 style={{ color: '#1f2937' }}>Available Umbrellas</h2>
-            <div style={{ display: 'flex', gap: '12px', alignItems: 'center' }}>
+          <div style={{ display: 'flex', flexWrap: 'wrap', justifyContent: 'space-between', alignItems: 'center', marginBottom: '20px', gap: '12px' }}>
+            <h2 style={{ color: '#1f2937', margin: 0 }}>Available Umbrellas</h2>
+            <div style={{ display: 'flex', gap: '8px', alignItems: 'center', flexWrap: 'wrap' }}>
               <div style={{ display: 'flex', gap: '4px', background: '#f3f4f6', borderRadius: '8px', padding: '4px' }}>
                 <button
                   onClick={() => setViewMode('grid')}
@@ -168,15 +168,16 @@ const UmbrellaSelection = () => {
                   <span style={{ 
                     background: '#667eea', 
                     color: 'white', 
-                    padding: '8px 16px', 
+                    padding: '6px 12px', 
                     borderRadius: '20px',
-                    fontSize: '14px',
-                    fontWeight: '600'
+                    fontSize: 'clamp(0.75rem, 2vw, 0.875rem)',
+                    fontWeight: '600',
+                    whiteSpace: 'nowrap'
                   }}>
-                    {selectedUmbrellas.length} in your cart
+                    {selectedUmbrellas.length} in cart
                   </span>
-                  <button className="btn btn-success" onClick={handleRentSelected}>
-                    Rent Selected ({selectedUmbrellas.length})
+                  <button className="btn btn-success" onClick={handleRentSelected} style={{ fontSize: 'clamp(0.75rem, 2vw, 0.875rem)' }}>
+                    Rent ({selectedUmbrellas.length})
                   </button>
                 </>
               )}

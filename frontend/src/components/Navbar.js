@@ -13,10 +13,10 @@ const Navbar = () => {
 
   return (
     <nav className="navbar">
-      <div style={{ display: 'flex', alignItems: 'center', gap: '24px' }}>
+      <div style={{ display: 'flex', alignItems: 'center', gap: '8px', flexWrap: 'wrap', width: '100%' }}>
         <h2 
           className="gradient-text" 
-          style={{ fontSize: '1.8rem', fontWeight: '800', cursor: 'pointer' }}
+          style={{ fontWeight: '800', cursor: 'pointer', margin: 0 }}
           onClick={() => navigate('/dashboard')}
         >
           ☂️ RainShield
@@ -28,15 +28,14 @@ const Navbar = () => {
         >
           👛 ₹{user?.walletBalance || 0}
         </div>
+      </div>
+      <div style={{ display: 'flex', gap: '0.5rem', alignItems: 'center', flexWrap: 'wrap', width: '100%' }}>
+        <button className="btn btn-success" onClick={() => navigate('/umbrellas')}>
+          ☂️ Umbrellas
+        </button>
         <button className="btn btn-primary" onClick={() => navigate('/tracking')}>
           📍 Track
         </button>
-      </div>
-      <div style={{ display: 'flex', gap: '12px', alignItems: 'center' }}>
-        <button className="btn btn-success" onClick={() => navigate('/umbrellas')}>
-          ☂️ Find Umbrellas
-        </button>
-
         <button className="btn" style={{ background: '#6b7280', color: 'white' }} onClick={() => navigate('/profile')}>
           👤 Profile
         </button>
@@ -45,8 +44,7 @@ const Navbar = () => {
           onClick={handleLogout} 
           style={{ 
             background: 'linear-gradient(135deg, #ef4444 0%, #dc2626 100%)', 
-            color: 'white',
-            boxShadow: '0 8px 20px rgba(239, 68, 68, 0.3)'
+            color: 'white'
           }}
         >
           🚪 Logout

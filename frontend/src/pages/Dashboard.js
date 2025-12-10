@@ -59,7 +59,20 @@ const Dashboard = () => {
             </div>
           )}
 
-          <div style={{ display: 'grid', gridTemplateColumns: 'repeat(4, 1fr)', gap: '12px', alignItems: 'start' }}>
+          <style>{`
+            .dashboard-grid {
+              display: grid;
+              grid-template-columns: 1fr;
+              gap: 12px;
+            }
+            @media (min-width: 640px) {
+              .dashboard-grid { grid-template-columns: repeat(2, 1fr); }
+            }
+            @media (min-width: 1024px) {
+              .dashboard-grid { grid-template-columns: repeat(4, 1fr); }
+            }
+          `}</style>
+          <div className="dashboard-grid">
             <div className="card" style={{ background: 'linear-gradient(135deg, #667eea 0%, #764ba2 100%)', color: 'white', padding: '1rem' }}>
               <h3 style={{ marginBottom: '10px', fontSize: '1rem' }}>Umbrella Rental System</h3>
               <div style={{ display: 'grid', gap: '10px' }}>
