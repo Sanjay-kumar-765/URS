@@ -1,9 +1,10 @@
 node_modules/
+.env
+.env.local
+.env.production
+*.log
+.DS_Store
+build/
+dist/
 .expo/
 .expo-shared/
-npm-debug.*
-*.log
-backend/
-frontend/
-*.md
-.git/
