@@ -87,7 +87,7 @@ const Profile = () => {
                     <strong>Phone:</strong> {user?.phone || 'Not provided'}
                   </div>
                   <div style={{ marginBottom: '12px' }}>
-                    <strong>Member Since:</strong> {user?.createdAt ? new Date(user.createdAt).toLocaleDateString() : 'Unknown'}
+                    <strong>Member Since:</strong> {user?.createdAt ? new Date(user.createdAt).toLocaleDateString('en-GB') : 'Unknown'}
                   </div>
                   <div style={{ marginBottom: '16px' }}>
                     <strong>Account Type:</strong> {user?.googleId ? 'Google Account' : 'Email Account'}

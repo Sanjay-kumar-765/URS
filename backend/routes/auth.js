@@ -1,9 +1,11 @@
 const express = require('express');
 const jwt = require('jsonwebtoken');
+const { OAuth2Client } = require('google-auth-library');
 const User = require('../models/User');
 const auth = require('../middleware/auth');
 
 const router = express.Router();
+const googleClient = new OAuth2Client(process.env.GOOGLE_CLIENT_ID);
 
 // Register
 router.post('/register', async (req, res) => {
@@ -147,6 +149,54 @@ router.delete('/profile', auth, async (req, res) => {
     res.json({ message: 'Account deleted successfully' });
   } catch (error) {
     res.status(500).json({ message: error.message });
+  }
+});
+
+// Google OAuth login
+router.post('/google', async (req, res) => {
+  try {
+    const { credential } = req.body;
+    const ticket = await googleClient.verifyIdToken({
+      idToken: credential,
+      audience: process.env.GOOGLE_CLIENT_ID
+    });
+    const payload = ticket.getPayload();
+    const { email, sub: googleId } = payload;
+    
+    let user = await User.findOne({ email });
+    
+    if (!user) {
+      user = new User({
+        email,
+        googleId,
+        walletBalance: 0,
+        depositMade: false,
+        cashbackReceived: false
+      });
+      await user.save();
+      
+      if (global.io) {
+        global.io.emit('newUser', {
+          id: user._id,
+          email: user.email,
+          createdAt: user.createdAt
+        });
+      }
+    }
+    
+    const token = jwt.sign({ userId: user._id }, process.env.JWT_SECRET || 'secret');
+    res.json({
+      token,
+      user: {
+        id: user._id,
+        email: user.email,
+        walletBalance: user.walletBalance,
+        depositMade: user.depositMade,
+        cashbackReceived: user.cashbackReceived
+      }
+    });
+  } catch (error) {
+    res.status(400).json({ message: 'Google authentication failed' });
   }
 });
 
