@@ -52,29 +52,23 @@ const Login = () => {
   };
 
   return (
-    <div className="container" style={{ display: 'flex', justifyContent: 'center', alignItems: 'center', minHeight: '100vh' }}>
-      <div className="card" style={{ width: '100%', maxWidth: '400px' }}>
-        <div className="text-center mb-4">
-          <h1 className="gradient-text" style={{ fontSize: '2.5rem', marginBottom: '12px', fontWeight: '800' }}>
+    <div className="min-h-screen flex items-center justify-center p-4">
+      <div className="glass-card w-full max-w-md">
+        <div className="text-center mb-6">
+          <h1 className="text-4xl md:text-5xl font-extrabold mb-3 bg-gradient-to-r from-indigo-600 to-purple-600 bg-clip-text text-transparent">
             ☂️ RainShield
           </h1>
-          <p style={{ color: '#6b7280', fontSize: '1.1rem', fontWeight: '300' }}>
+          <p className="text-gray-600 text-lg font-light">
             Hey there! Ready to stay dry? 🌧️
           </p>
-          <div style={{
-            width: '60px',
-            height: '4px',
-            background: 'linear-gradient(135deg, #667eea 0%, #764ba2 100%)',
-            margin: '16px auto',
-            borderRadius: '2px'
-          }}></div>
+          <div className="w-16 h-1 bg-gradient-to-r from-indigo-500 to-purple-600 mx-auto mt-4 rounded-full"></div>
         </div>
 
-        <form onSubmit={handleSubmit}>
+        <form onSubmit={handleSubmit} className="space-y-4">
           <input
             type="email"
             placeholder="Email"
-            className="input"
+            className="input-field"
             value={formData.email}
             onChange={(e) => setFormData({...formData, email: e.target.value})}
             required
@@ -84,7 +78,7 @@ const Login = () => {
             <input
               type="tel"
               placeholder="Phone Number"
-              className="input"
+              className="input-field"
               value={formData.phone}
               onChange={(e) => setFormData({...formData, phone: e.target.value})}
               required
@@ -94,20 +88,20 @@ const Login = () => {
           <input
             type="password"
             placeholder="Password"
-            className="input"
+            className="input-field"
             value={formData.password}
             onChange={(e) => setFormData({...formData, password: e.target.value})}
             required
           />
 
-          <button type="submit" className="btn btn-primary" style={{ width: '100%' }} disabled={loading}>
+          <button type="submit" className="btn-primary" disabled={loading}>
             {loading ? 'Just a sec...' : (isLogin ? 'Let me in!' : 'Join the club!')}
           </button>
         </form>
 
-        <div style={{ margin: '20px 0', textAlign: 'center', color: '#6b7280' }}>OR</div>
+        <div className="my-6 text-center text-gray-500 font-medium">OR</div>
 
-        <div style={{ display: 'flex', justifyContent: 'center', marginBottom: '20px' }}>
+        <div className="flex justify-center mb-6">
           <GoogleLogin
             onSuccess={handleGoogleSuccess}
             onError={handleGoogleError}
@@ -123,7 +117,7 @@ const Login = () => {
           <button
             type="button"
             onClick={() => setIsLogin(!isLogin)}
-            style={{ background: 'none', border: 'none', color: '#667eea', cursor: 'pointer' }}
+            className="text-indigo-600 hover:text-purple-600 font-medium transition-colors duration-200"
           >
             {isLogin ? "New here? Join us!" : "Already a member? Welcome back!"}
           </button>

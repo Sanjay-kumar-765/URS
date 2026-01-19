@@ -8,6 +8,7 @@ const Wallet = () => {
   const [amount, setAmount] = useState(300);
   const [transactions, setTransactions] = useState([]);
   const [loading, setLoading] = useState(false);
+  const [showPaymentModal, setShowPaymentModal] = useState(false);
 
   useEffect(() => {
     fetchTransactions();
@@ -22,9 +23,6 @@ const Wallet = () => {
     }
   };
 
-  const [showPaymentModal, setShowPaymentModal] = useState(false);
-  const [selectedPaymentMethod, setSelectedPaymentMethod] = useState('');
-
   const handleDeposit = () => {
     if (amount < 100) {
       alert('Minimum deposit amount is ₹100');
@@ -36,7 +34,6 @@ const Wallet = () => {
   const processPayment = async (method) => {
     setLoading(true);
     try {
-      // Simulate payment processing
       await new Promise(resolve => setTimeout(resolve, 2000));
       
       const verifyResponse = await api.post('/wallet/verify-deposit', {
@@ -57,102 +54,6 @@ const Wallet = () => {
     }
   };
 
-  const PaymentModal = () => {
-    if (!showPaymentModal) return null;
-    
-    return (
-      <div style={{
-        position: 'fixed',
-        top: 0,
-        left: 0,
-        right: 0,
-        bottom: 0,
-        background: 'rgba(0,0,0,0.5)',
-        display: 'flex',
-        justifyContent: 'center',
-        alignItems: 'center',
-        zIndex: 1000
-      }}>
-        <div className="card" style={{ width: '400px', maxWidth: '90vw' }}>
-          <h3 style={{ marginBottom: '20px' }}>Select Payment Method</h3>
-          <div style={{ marginBottom: '16px', fontSize: '1.2rem', fontWeight: 'bold' }}>
-            Amount: ₹{amount}
-          </div>
-          
-          <div style={{ display: 'grid', gap: '12px' }}>
-            <button
-              className="btn"
-              style={{ background: '#10b981', color: 'white', padding: '16px', textAlign: 'left' }}
-              onClick={() => processPayment('UPI')}
-              disabled={loading}
-            >
-              <div style={{ display: 'flex', alignItems: 'center', gap: '12px' }}>
-                <span style={{ fontSize: '1.5rem' }}>📱</span>
-                <div>
-                  <div style={{ fontWeight: 'bold' }}>UPI Payment</div>
-                  <div style={{ fontSize: '0.875rem', opacity: 0.8 }}>Pay using UPI ID</div>
-                </div>
-              </div>
-            </button>
-            
-            <button
-              className="btn"
-              style={{ background: '#3b82f6', color: 'white', padding: '16px', textAlign: 'left' }}
-              onClick={() => processPayment('QR Code')}
-              disabled={loading}
-            >
-              <div style={{ display: 'flex', alignItems: 'center', gap: '12px' }}>
-                <span style={{ fontSize: '1.5rem' }}>📷</span>
-                <div>
-                  <div style={{ fontWeight: 'bold' }}>QR Code</div>
-                  <div style={{ fontSize: '0.875rem', opacity: 0.8 }}>Scan QR to pay</div>
-                </div>
-              </div>
-            </button>
-            
-            <button
-              className="btn"
-              style={{ background: '#8b5cf6', color: 'white', padding: '16px', textAlign: 'left' }}
-              onClick={() => processPayment('Card')}
-              disabled={loading}
-            >
-              <div style={{ display: 'flex', alignItems: 'center', gap: '12px' }}>
-                <span style={{ fontSize: '1.5rem' }}>💳</span>
-                <div>
-                  <div style={{ fontWeight: 'bold' }}>Credit/Debit Card</div>
-                  <div style={{ fontSize: '0.875rem', opacity: 0.8 }}>Visa, Mastercard, RuPay</div>
-                </div>
-              </div>
-            </button>
-            
-            <button
-              className="btn"
-              style={{ background: '#f59e0b', color: 'white', padding: '16px', textAlign: 'left' }}
-              onClick={() => processPayment('Wallet')}
-              disabled={loading}
-            >
-              <div style={{ display: 'flex', alignItems: 'center', gap: '12px' }}>
-                <span style={{ fontSize: '1.5rem' }}>👛</span>
-                <div>
-                  <div style={{ fontWeight: 'bold' }}>Digital Wallet</div>
-                  <div style={{ fontSize: '0.875rem', opacity: 0.8 }}>Paytm, PhonePe, GPay</div>
-                </div>
-              </div>
-            </button>
-          </div>
-          
-          <button
-            className="btn"
-            style={{ background: '#6b7280', color: 'white', width: '100%', marginTop: '16px' }}
-            onClick={() => setShowPaymentModal(false)}
-          >
-            Cancel
-          </button>
-        </div>
-      </div>
-    );
-  };
-
   const getTransactionIcon = (type) => {
     switch (type) {
       case 'deposit': return '💰';
@@ -164,63 +65,54 @@ const Wallet = () => {
   };
 
   return (
-    <div>
+    <div className="min-h-screen">
       <Navbar />
-      <div className="container">
-        <div className="card">
-          <h2 style={{ marginBottom: '20px', color: '#1f2937' }}>💳 Your Money Stuff</h2>
+      <div className="max-w-7xl mx-auto px-3 py-4 md:px-6 md:py-6">
+        <div className="glass-card">
+          <h2 className="text-2xl md:text-3xl font-bold text-gray-800 mb-6">💳 Your Money Stuff</h2>
           
-          <div className="grid grid-2">
-            <div className="card" style={{ background: '#f0f9ff', border: '1px solid #0ea5e9' }}>
-              <h3 style={{ color: '#0c4a6e', marginBottom: '12px' }}>What you've got</h3>
-              <div style={{ fontSize: '2.5rem', fontWeight: 'bold', color: '#0c4a6e' }}>
+          <div className="grid grid-cols-1 md:grid-cols-2 gap-4 mb-6">
+            {/* Balance Card */}
+            <div className="bg-gradient-to-br from-blue-50 to-blue-100 border border-blue-500 rounded-xl p-6 shadow-lg">
+              <h3 className="text-blue-900 font-semibold mb-3">What you've got</h3>
+              <div className="text-5xl font-bold text-blue-900 mb-4">
                 ₹{user?.walletBalance || 0}
               </div>
               {!user?.depositMade && (
-                <div style={{ 
-                  background: '#dcfce7', 
-                  color: '#166534', 
-                  padding: '8px 12px', 
-                  borderRadius: '6px', 
-                  marginTop: '12px',
-                  fontSize: '0.875rem'
-                }}>
+                <div className="bg-green-100 text-green-800 p-3 rounded-lg text-sm">
                   🎁 First time? We'll add ₹100 bonus on ₹300+ deposit!
                 </div>
               )}
             </div>
 
-            <div className="card">
-              <h3 style={{ marginBottom: '16px', color: '#1f2937' }}>Top up your wallet</h3>
+            {/* Add Money Card */}
+            <div className="bg-white rounded-xl p-6 shadow-lg border border-gray-200">
+              <h3 className="font-semibold text-gray-800 mb-4">Top up your wallet</h3>
               <input
                 type="number"
                 placeholder="Enter amount"
-                className="input"
+                className="input-field"
                 value={amount}
                 onChange={(e) => setAmount(Number(e.target.value))}
                 min="100"
               />
-              <div style={{ display: 'flex', gap: '8px', marginBottom: '16px' }}>
+              <div className="flex flex-wrap gap-2 mb-4">
                 {[300, 500, 1000, 2000].map((preset) => (
                   <button
                     key={preset}
                     onClick={() => setAmount(preset)}
-                    style={{
-                      padding: '8px 12px',
-                      border: '1px solid #d1d5db',
-                      borderRadius: '6px',
-                      background: amount === preset ? '#667eea' : 'white',
-                      color: amount === preset ? 'white' : '#374151',
-                      cursor: 'pointer'
-                    }}
+                    className={`px-4 py-2 rounded-lg border transition-all ${
+                      amount === preset
+                        ? 'bg-indigo-500 text-white border-indigo-500'
+                        : 'bg-white text-gray-700 border-gray-300 hover:border-indigo-500'
+                    }`}
                   >
                     ₹{preset}
                   </button>
                 ))}
               </div>
               <button 
-                className="btn btn-primary" 
-                style={{ width: '100%' }}
+                className="btn-primary"
                 onClick={handleDeposit}
                 disabled={loading}
               >
@@ -229,51 +121,30 @@ const Wallet = () => {
             </div>
           </div>
 
-          <div className="card" style={{ marginTop: '20px' }}>
-            <h3 style={{ marginBottom: '16px', color: '#1f2937' }}>📊 Your Money Moves</h3>
+          {/* Transactions */}
+          <div className="bg-white rounded-xl p-6 shadow-lg border border-gray-200">
+            <h3 className="font-semibold text-gray-800 mb-4">📊 Your Money Moves</h3>
             {transactions.length === 0 ? (
-              <p style={{ color: '#6b7280', textAlign: 'center', padding: '20px' }}>
+              <p className="text-gray-500 text-center py-8">
                 Nothing here yet! Start by adding some money 🚀
               </p>
             ) : (
-              <div style={{ maxHeight: '400px', overflowY: 'auto' }}>
+              <div className="max-h-96 overflow-y-auto space-y-3">
                 {transactions.map((transaction) => (
-                  <div key={transaction._id} style={{
-                    display: 'flex',
-                    justifyContent: 'space-between',
-                    alignItems: 'center',
-                    padding: '12px',
-                    border: '1px solid #e5e7eb',
-                    borderRadius: '8px',
-                    marginBottom: '8px'
-                  }}>
-                    <div style={{ display: 'flex', alignItems: 'center', gap: '12px' }}>
-                      <span style={{ fontSize: '1.5rem' }}>
-                        {getTransactionIcon(transaction.type)}
-                      </span>
+                  <div key={transaction._id} className="flex justify-between items-center p-4 border border-gray-200 rounded-lg hover:bg-gray-50 transition-colors">
+                    <div className="flex items-center gap-3">
+                      <span className="text-2xl">{getTransactionIcon(transaction.type)}</span>
                       <div>
-                        <div style={{ fontWeight: '600', textTransform: 'capitalize' }}>
-                          {transaction.type}
-                        </div>
-                        <div style={{ fontSize: '0.875rem', color: '#6b7280' }}>
+                        <div className="font-semibold capitalize">{transaction.type}</div>
+                        <div className="text-sm text-gray-500">
                           {new Date(transaction.createdAt).toLocaleString()}
                         </div>
                         {transaction.description && (
-                          <div style={{ fontSize: '0.875rem', color: '#6b7280' }}>
-                            {transaction.description}
-                          </div>
-                        )}
-                        {transaction.user && transaction.user.email && (
-                          <div style={{ fontSize: '0.875rem', color: '#667eea', fontWeight: '500' }}>
-                            User: {transaction.user.email}
-                          </div>
+                          <div className="text-sm text-gray-600">{transaction.description}</div>
                         )}
                       </div>
                     </div>
-                    <div style={{ 
-                      fontWeight: 'bold', 
-                      color: transaction.amount > 0 ? '#10b981' : '#ef4444' 
-                    }}>
+                    <div className={`font-bold text-lg ${transaction.amount > 0 ? 'text-green-600' : 'text-red-600'}`}>
                       {transaction.amount > 0 ? '+' : ''}₹{Math.abs(transaction.amount)}
                     </div>
                   </div>
@@ -282,9 +153,51 @@ const Wallet = () => {
             )}
           </div>
         </div>
-        
-        <PaymentModal />
       </div>
+
+      {/* Payment Modal */}
+      {showPaymentModal && (
+        <div className="fixed inset-0 bg-black/50 flex items-center justify-center z-50 p-4">
+          <div className="glass-card max-w-md w-full">
+            <h3 className="text-xl font-bold mb-4">Select Payment Method</h3>
+            <div className="text-2xl font-bold mb-6">Amount: ₹{amount}</div>
+            
+            <div className="space-y-3">
+              {[
+                { method: 'UPI', icon: '📱', desc: 'Pay using UPI ID', color: 'green' },
+                { method: 'QR Code', icon: '📷', desc: 'Scan QR to pay', color: 'blue' },
+                { method: 'Card', icon: '💳', desc: 'Visa, Mastercard, RuPay', color: 'purple' },
+                { method: 'Wallet', icon: '👛', desc: 'Paytm, PhonePe, GPay', color: 'yellow' }
+              ].map(({ method, icon, desc, color }) => (
+                <button
+                  key={method}
+                  onClick={() => processPayment(method)}
+                  disabled={loading}
+                  className={`w-full p-4 rounded-lg text-left flex items-center gap-3 transition-all hover:shadow-lg ${
+                    color === 'green' ? 'bg-green-500' :
+                    color === 'blue' ? 'bg-blue-500' :
+                    color === 'purple' ? 'bg-purple-500' :
+                    'bg-yellow-500'
+                  } text-white disabled:opacity-50`}
+                >
+                  <span className="text-2xl">{icon}</span>
+                  <div>
+                    <div className="font-bold">{method}</div>
+                    <div className="text-sm opacity-90">{desc}</div>
+                  </div>
+                </button>
+              ))}
+            </div>
+            
+            <button
+              onClick={() => setShowPaymentModal(false)}
+              className="w-full mt-4 bg-gray-600 text-white font-semibold py-3 px-6 rounded-lg hover:bg-gray-700 transition-all"
+            >
+              Cancel
+            </button>
+          </div>
+        </div>
+      )}
     </div>
   );
 };
