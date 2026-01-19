@@ -17,19 +17,39 @@ const RentalTracking = () => {
   const [showDropOffModal, setShowDropOffModal] = useState(false);
   const [selectedDropOffLocation, setSelectedDropOffLocation] = useState(null);
   const [selectedUmbrellasForDropOff, setSelectedUmbrellasForDropOff] = useState([]);
-  const [campusLocations] = useState([
-    { name: 'Main Gate', address: 'Main Gate, Chandigarh University', lat: 30.7590, lng: 76.5675 },
-    { name: 'Central Library', address: 'Central Library, Chandigarh University', lat: 30.7585, lng: 76.5680 },
-    { name: 'Food Court', address: 'Food Court, Chandigarh University', lat: 30.7580, lng: 76.5670 },
-    { name: 'Sports Complex', address: 'Sports Complex, Chandigarh University', lat: 30.7595, lng: 76.5685 },
-    { name: 'Boys Hostel', address: 'Boys Hostel, Chandigarh University', lat: 30.7575, lng: 76.5665 }
-  ]);
+  const [campusLocations, setCampusLocations] = useState([]);
 
   useEffect(() => {
     fetchActiveRentals();
+    fetchLocations();
     const timer = setInterval(() => setCurrentTime(new Date()), 1000);
     return () => clearInterval(timer);
   }, []);
+
+  const fetchLocations = async () => {
+    try {
+      const response = await api.get('/umbrellas');
+      const uniqueLocations = [];
+      const seen = new Set();
+      response.data.forEach(umbrella => {
+        if (umbrella.location && umbrella.location.address) {
+          const key = umbrella.location.address;
+          if (!seen.has(key)) {
+            seen.add(key);
+            uniqueLocations.push({
+              name: umbrella.location.address.split(',')[0],
+              address: umbrella.location.address,
+              lat: umbrella.location.latitude,
+              lng: umbrella.location.longitude
+            });
+          }
+        }
+      });
+      setCampusLocations(uniqueLocations);
+    } catch (error) {
+      console.error('Failed to fetch locations');
+    }
+  };
 
   const fetchActiveRentals = async () => {
     try {
@@ -253,7 +273,19 @@ const RentalTracking = () => {
                   }}
                   className="flex-1 min-w-[200px] bg-gradient-to-r from-red-500 to-pink-600 text-white font-semibold py-3 px-6 rounded-lg shadow-lg hover:shadow-xl transition-all"
                 >
-                  🏁 End Rental
+                  🏁 End This Rental
+                </button>
+              )}
+              
+              {activeRentals.filter(r => r.unlocked).length > 1 && (
+                <button 
+                  onClick={() => {
+                    setSelectedUmbrellasForDropOff(activeRentals.filter(r => r.unlocked).map(r => r._id));
+                    setShowDropOffModal(true);
+                  }}
+                  className="flex-1 min-w-[200px] bg-gradient-to-r from-orange-500 to-red-600 text-white font-semibold py-3 px-6 rounded-lg shadow-lg hover:shadow-xl transition-all"
+                >
+                  🏁 End All ({activeRentals.filter(r => r.unlocked).length})
                 </button>
               )}
               
@@ -308,9 +340,45 @@ const RentalTracking = () => {
       {showDropOffModal && (
         <div className="fixed inset-0 bg-black/50 flex items-center justify-center z-50 p-4 overflow-y-auto">
           <div className="glass-card max-w-2xl w-full my-8">
-            <h3 className="text-2xl font-bold mb-6">📍 Select Drop-off Location</h3>
+            <h3 className="text-2xl font-bold mb-4">📍 Drop Off Umbrellas</h3>
             
-            <div className="grid grid-cols-1 md:grid-cols-2 gap-3 mb-6">
+            {activeRentals.filter(r => r.unlocked).length > 1 && (
+              <div className="mb-6">
+                <h4 className="font-semibold text-gray-700 mb-3">Select Umbrellas to Drop:</h4>
+                <div className="grid grid-cols-1 md:grid-cols-2 gap-2 max-h-48 overflow-y-auto">
+                  {activeRentals.filter(r => r.unlocked).map((rental) => (
+                    <label
+                      key={rental._id}
+                      className={`flex items-center gap-3 p-3 rounded-lg border-2 cursor-pointer transition-all ${
+                        selectedUmbrellasForDropOff.includes(rental._id)
+                          ? 'border-indigo-500 bg-indigo-50'
+                          : 'border-gray-200 hover:border-indigo-300'
+                      }`}
+                    >
+                      <input
+                        type="checkbox"
+                        checked={selectedUmbrellasForDropOff.includes(rental._id)}
+                        onChange={(e) => {
+                          if (e.target.checked) {
+                            setSelectedUmbrellasForDropOff([...selectedUmbrellasForDropOff, rental._id]);
+                          } else {
+                            setSelectedUmbrellasForDropOff(selectedUmbrellasForDropOff.filter(id => id !== rental._id));
+                          }
+                        }}
+                        className="w-5 h-5 accent-indigo-500"
+                      />
+                      <div>
+                        <div className="font-bold text-sm">{rental.umbrella?.umbrellaId}</div>
+                        <div className="text-xs text-gray-600 capitalize">{rental.umbrella?.color}</div>
+                      </div>
+                    </label>
+                  ))}
+                </div>
+              </div>
+            )}
+            
+            <h4 className="font-semibold text-gray-700 mb-3">Select Drop-off Location:</h4>
+            <div className="grid grid-cols-1 md:grid-cols-2 gap-3 mb-6 max-h-64 overflow-y-auto">
               {campusLocations.map((location) => (
                 <button
                   key={location.name}
@@ -333,10 +401,10 @@ const RentalTracking = () => {
             <div className="flex gap-3">
               <button
                 onClick={confirmEndRental}
-                disabled={!selectedDropOffLocation}
+                disabled={!selectedDropOffLocation || selectedUmbrellasForDropOff.length === 0}
                 className="flex-1 bg-gradient-to-r from-green-500 to-emerald-600 text-white font-semibold py-3 rounded-lg shadow-lg hover:shadow-xl transition-all disabled:opacity-50"
               >
-                Drop Here
+                Drop {selectedUmbrellasForDropOff.length} Umbrella{selectedUmbrellasForDropOff.length !== 1 ? 's' : ''} Here
               </button>
               <button
                 onClick={() => {
