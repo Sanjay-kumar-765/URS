@@ -31,25 +31,12 @@ const RentalTracking = () => {
     return () => clearInterval(timer);
   }, []);
 
-  useEffect(() => {
-    if (showDropOffModal || showPaymentModal) {
-      document.body.style.overflow = 'hidden';
-    } else {
-      document.body.style.overflow = 'unset';
-    }
-    return () => {
-      document.body.style.overflow = 'unset';
-    };
-  }, [showDropOffModal, showPaymentModal]);
-
   const fetchActiveRentals = async () => {
     try {
       const response = await api.get('/rentals/active');
       const rentals = Array.isArray(response.data) ? response.data : [response.data].filter(Boolean);
       setActiveRentals(rentals);
-      if (rentals.length > 0) {
-        setSelectedRental(rentals[0]);
-      }
+      if (rentals.length > 0) setSelectedRental(rentals[0]);
     } catch (error) {
       console.log('No active rentals');
     } finally {
@@ -72,319 +59,59 @@ const RentalTracking = () => {
     return hours <= 7 ? (hours + 1) * 7 : Math.ceil((hours + 1) / 24) * 70;
   };
 
-  const handlePayment = () => {
-    setShowPaymentModal(true);
-  };
-
   const processRentalPayment = async (method) => {
     if (paymentLoading) return;
     setPaymentLoading(true);
-    
     try {
       const response = await api.post(`/rentals/${selectedRental._id}/pay`, {
         paymentId: `${method}_${Date.now()}`,
         paymentMethod: method
       });
-      
       setSelectedRental(prev => ({ ...prev, unlocked: true, paymentStatus: 'completed' }));
       setActiveRentals(prev => prev.map(r => r._id === selectedRental._id ? { ...r, unlocked: true } : r));
       updateUser({ walletBalance: response.data.walletBalance });
-      alert(`Payment successful via ${method}! ₹${response.data.amountDeducted} deducted. Umbrella unlocked.`);
+      alert(`Payment successful! ₹${response.data.amountDeducted} deducted. Umbrella unlocked.`);
       setShowPaymentModal(false);
     } catch (error) {
-      alert('Payment verification failed');
+      alert('Payment failed');
     } finally {
       setPaymentLoading(false);
     }
   };
 
-  const handlePayAllRentals = async () => {
-    if (paymentLoading) return;
-    
-    const unpaidRentals = activeRentals.filter(r => !r.unlocked);
-    if (unpaidRentals.length === 0) return;
-    
-    const totalCost = unpaidRentals.reduce((sum, rental) => {
-      const start = new Date(rental.startTime);
-      const hours = Math.ceil((currentTime - start) / (1000 * 60 * 60));
-      return sum + (hours <= 7 ? (hours || 1) * 7 : Math.ceil(hours / 24) * 70);
-    }, 0);
-    
-    if (window.confirm(`Pay ₹${totalCost} to unlock all ${unpaidRentals.length} umbrellas?`)) {
-      setPaymentLoading(true);
-      try {
-        const response = await api.post('/rentals/pay-all', {
-          paymentId: `batch_${Date.now()}`,
-          paymentMethod: 'Wallet'
-        });
-        
-        setActiveRentals(prev => prev.map(r => ({ ...r, unlocked: true })));
-        updateUser({ walletBalance: response.data.walletBalance });
-        alert(`Payment successful! ₹${response.data.amountDeducted} deducted. ${response.data.count} umbrellas unlocked.`);
-      } catch (error) {
-        alert(error.response?.data?.message || 'Payment failed');
-      } finally {
-        setPaymentLoading(false);
-      }
-    }
-  };
-
-  const handleEndRental = () => {
-    if (!selectedRental) return;
-    setSelectedUmbrellasForDropOff([selectedRental._id]);
-    setShowDropOffModal(true);
-  };
-
-  const handleEndMultipleRentals = () => {
-    const unlockedRentals = activeRentals.filter(r => r.unlocked);
-    if (unlockedRentals.length === 0) return;
-    setSelectedUmbrellasForDropOff(unlockedRentals.map(r => r._id));
-    setShowDropOffModal(true);
-  };
-
   const confirmEndRental = async () => {
-    if (!selectedDropOffLocation) {
-      alert('Please select a drop-off location');
+    if (!selectedDropOffLocation || selectedUmbrellasForDropOff.length === 0) {
+      alert('Please select umbrellas and drop-off location');
       return;
     }
-    if (selectedUmbrellasForDropOff.length === 0) {
-      alert('Please select at least one umbrella to drop off');
-      return;
-    }
-    
     try {
       const dropOffData = {
         address: selectedDropOffLocation.address,
         latitude: selectedDropOffLocation.lat,
         longitude: selectedDropOffLocation.lng
       };
-
       if (selectedUmbrellasForDropOff.length === 1) {
-        const response = await api.post(`/rentals/${selectedUmbrellasForDropOff[0]}/end`, {
-          dropOffLocation: dropOffData
-        });
-        const { rental } = response.data;
-        alert(`Rental ended! Umbrella dropped at ${selectedDropOffLocation.name}. Total cost: ₹${rental.totalAmount}`);
+        const response = await api.post(`/rentals/${selectedUmbrellasForDropOff[0]}/end`, { dropOffLocation: dropOffData });
+        alert(`Rental ended! Total: ₹${response.data.rental.totalAmount}`);
       } else {
-        const promises = selectedUmbrellasForDropOff.map(rentalId => 
-          api.post(`/rentals/${rentalId}/end`, { dropOffLocation: dropOffData })
-        );
-        await Promise.all(promises);
-        alert(`${selectedUmbrellasForDropOff.length} umbrellas dropped at ${selectedDropOffLocation.name}`);
+        await Promise.all(selectedUmbrellasForDropOff.map(id => api.post(`/rentals/${id}/end`, { dropOffLocation: dropOffData })));
+        alert(`${selectedUmbrellasForDropOff.length} umbrellas dropped!`);
       }
-      
       setShowDropOffModal(false);
-      setSelectedDropOffLocation(null);
-      setSelectedUmbrellasForDropOff([]);
       navigate('/dashboard');
     } catch (error) {
-      console.error('End rental error:', error);
-      alert(error.response?.data?.message || 'Failed to end rental');
+      alert('Failed to end rental');
     }
   };
-
-  const PaymentModal = () => {
-    if (!showPaymentModal || !selectedRental) return null;
-    const amount = calculateCurrentCost();
-    
-    return (
-      <div style={{
-        position: 'fixed',
-        top: 0,
-        left: 0,
-        right: 0,
-        bottom: 0,
-        background: 'rgba(0,0,0,0.5)',
-        display: 'flex',
-        justifyContent: 'center',
-        alignItems: 'center',
-        zIndex: 1000
-      }}>
-        <div className="card" style={{ width: '400px', maxWidth: '90vw' }}>
-          <h3 style={{ marginBottom: '20px' }}>Pay for Rental</h3>
-          <div style={{ marginBottom: '16px', fontSize: '1.2rem', fontWeight: 'bold' }}>
-            Amount: ₹{amount}
-          </div>
-          
-          <div style={{ display: 'grid', gap: '12px' }}>
-            {['UPI', 'QR Code', 'Card', 'Wallet'].map((method, index) => (
-              <button
-                key={method}
-                className="btn"
-                style={{ 
-                  background: ['#10b981', '#3b82f6', '#8b5cf6', '#f59e0b'][index], 
-                  color: 'white', 
-                  padding: '16px', 
-                  textAlign: 'left' 
-                }}
-                onClick={() => processRentalPayment(method)}
-                disabled={paymentLoading}
-              >
-                <div style={{ display: 'flex', alignItems: 'center', gap: '12px' }}>
-                  <span style={{ fontSize: '1.5rem' }}>
-                    {['📱', '📷', '💳', '👛'][index]}
-                  </span>
-                  <div>
-                    <div style={{ fontWeight: 'bold' }}>{method} Payment</div>
-                  </div>
-                </div>
-              </button>
-            ))}
-          </div>
-          
-          <button
-            className="btn"
-            style={{ background: '#6b7280', color: 'white', width: '100%', marginTop: '16px' }}
-            onClick={() => setShowPaymentModal(false)}
-          >
-            Cancel
-          </button>
-        </div>
-      </div>
-    );
-  };
-
-  const DropOffModal = () => {
-    if (!showDropOffModal) return null;
-    const unlockedRentals = activeRentals.filter(r => r.unlocked);
-    
-    return (
-      <div 
-        style={{
-          position: 'fixed',
-          top: 0,
-          left: 0,
-          right: 0,
-          bottom: 0,
-          background: 'rgba(0,0,0,0.5)',
-          display: 'flex',
-          justifyContent: 'center',
-          alignItems: 'center',
-          zIndex: 1000,
-          overflowY: 'auto',
-          padding: '20px'
-        }}
-        onClick={(e) => {
-          if (e.target === e.currentTarget) {
-            setShowDropOffModal(false);
-            setSelectedDropOffLocation(null);
-            setSelectedUmbrellasForDropOff([]);
-          }
-        }}
-      >
-        <div className="card" style={{ width: '600px', maxWidth: '100%', margin: 'auto' }}>
-          <h3 style={{ marginBottom: '20px' }}>Drop Off Umbrellas</h3>
-          
-          {unlockedRentals.length > 1 && (
-            <div style={{ marginBottom: '20px' }}>
-              <h4 style={{ marginBottom: '12px', fontSize: '1rem' }}>Select Umbrellas to Drop:</h4>
-              <div style={{ display: 'grid', gap: '8px', maxHeight: '200px', overflowY: 'auto', padding: '4px' }}>
-                {unlockedRentals.map((rental) => (
-                  <label
-                    key={rental._id}
-                    style={{
-                      display: 'flex',
-                      alignItems: 'center',
-                      gap: '12px',
-                      padding: '10px',
-                      border: selectedUmbrellasForDropOff.includes(rental._id) ? '2px solid #667eea' : '1px solid #e5e7eb',
-                      borderRadius: '8px',
-                      background: selectedUmbrellasForDropOff.includes(rental._id) ? '#f0f9ff' : 'white',
-                      cursor: 'pointer'
-                    }}
-                  >
-                    <input
-                      type="checkbox"
-                      checked={selectedUmbrellasForDropOff.includes(rental._id)}
-                      onChange={(e) => {
-                        if (e.target.checked) {
-                          setSelectedUmbrellasForDropOff([...selectedUmbrellasForDropOff, rental._id]);
-                        } else {
-                          setSelectedUmbrellasForDropOff(selectedUmbrellasForDropOff.filter(id => id !== rental._id));
-                        }
-                      }}
-                      style={{ width: '18px', height: '18px', accentColor: '#667eea', flexShrink: 0 }}
-                    />
-                    <div>
-                      <div style={{ fontWeight: 'bold', fontSize: '0.9rem' }}>{rental.umbrella?.umbrellaId}</div>
-                      <div style={{ fontSize: '0.8rem', color: '#6b7280', textTransform: 'capitalize' }}>{rental.umbrella?.color}</div>
-                    </div>
-                  </label>
-                ))}
-              </div>
-            </div>
-          )}
-
-          <h4 style={{ marginBottom: '12px', fontSize: '1rem' }}>Select Drop-off Location:</h4>
-          <div style={{ display: 'grid', gap: '10px', marginBottom: '20px', maxHeight: '250px', overflowY: 'auto', padding: '4px' }}>
-            {campusLocations.map((location) => (
-              <button
-                key={location.name}
-                className="btn"
-                style={{ 
-                  background: selectedDropOffLocation?.name === location.name ? '#3b82f6' : '#f3f4f6',
-                  color: selectedDropOffLocation?.name === location.name ? 'white' : '#1f2937',
-                  padding: '12px', 
-                  textAlign: 'left',
-                  border: selectedDropOffLocation?.name === location.name ? '2px solid #3b82f6' : '1px solid #e5e7eb',
-                  minHeight: 'auto'
-                }}
-                onClick={() => setSelectedDropOffLocation(location)}
-              >
-                <div style={{ display: 'flex', alignItems: 'center', gap: '10px' }}>
-                  <span style={{ fontSize: '1.2rem' }}>📍</span>
-                  <div>
-                    <div style={{ fontWeight: 'bold', fontSize: '0.9rem' }}>{location.name}</div>
-                    <div style={{ fontSize: '0.8rem', opacity: 0.8 }}>{location.address}</div>
-                  </div>
-                </div>
-              </button>
-            ))}
-          </div>
-          
-          <div style={{ display: 'flex', gap: '12px' }}>
-            <button
-              className="btn btn-primary"
-              style={{ flex: 1 }}
-              onClick={confirmEndRental}
-              disabled={!selectedDropOffLocation || selectedUmbrellasForDropOff.length === 0}
-            >
-              Drop {selectedUmbrellasForDropOff.length} Umbrella{selectedUmbrellasForDropOff.length !== 1 ? 's' : ''} Here
-            </button>
-            <button
-              className="btn"
-              style={{ background: '#6b7280', color: 'white' }}
-              onClick={() => {
-                setShowDropOffModal(false);
-                setSelectedDropOffLocation(null);
-                setSelectedUmbrellasForDropOff([]);
-              }}
-            >
-              Cancel
-            </button>
-          </div>
-        </div>
-      </div>
-    );
-  };
-
-  useEffect(() => {
-    if (!window.google && !document.querySelector('script[src*="maps.googleapis.com"]')) {
-      const script = document.createElement('script');
-      script.src = 'https://maps.googleapis.com/maps/api/js?key=AIzaSyBFw0Qbyq9zTbyTHiHW-_-_-_-_-_-_-_&libraries=places';
-      script.async = true;
-      document.head.appendChild(script);
-    }
-  }, []);
 
   if (loading) {
     return (
-      <div>
+      <div className="min-h-screen">
         <Navbar />
-        <div className="container">
-          <div className="card text-center">
-            <div className="loading-spinner" style={{ margin: '0 auto 20px' }}></div>
-            <h2>Loading...</h2>
+        <div className="max-w-7xl mx-auto px-3 py-4 md:px-6 md:py-6">
+          <div className="glass-card text-center">
+            <div className="w-16 h-16 border-4 border-indigo-500 border-t-transparent rounded-full animate-spin mx-auto mb-4"></div>
+            <h2 className="text-2xl font-bold text-indigo-600">Loading...</h2>
           </div>
         </div>
       </div>
@@ -393,17 +120,16 @@ const RentalTracking = () => {
 
   if (activeRentals.length === 0) {
     return (
-      <div>
+      <div className="min-h-screen">
         <Navbar />
-        <div className="container">
-          <div className="card text-center">
-            <h2 style={{ color: '#6b7280', marginBottom: '16px' }}>No Active Rentals</h2>
-            <p style={{ color: '#6b7280', marginBottom: '20px' }}>
-              You don't have any active umbrella rentals.
-            </p>
+        <div className="max-w-7xl mx-auto px-3 py-4 md:px-6 md:py-6">
+          <div className="glass-card text-center py-12">
+            <div className="text-6xl mb-4">☂️</div>
+            <h2 className="text-2xl font-bold text-gray-700 mb-3">No Active Rentals</h2>
+            <p className="text-gray-500 mb-6">You don't have any active umbrella rentals.</p>
             <button 
-              className="btn btn-primary"
               onClick={() => navigate('/umbrellas')}
+              className="bg-gradient-to-r from-indigo-500 to-purple-600 text-white font-semibold py-3 px-8 rounded-lg shadow-lg hover:shadow-xl transition-all"
             >
               Find an Umbrella
             </button>
@@ -417,139 +143,214 @@ const RentalTracking = () => {
   const currentCost = calculateCurrentCost();
 
   return (
-    <div>
+    <div className="min-h-screen">
       <Navbar />
-      <div className="container">
-        <div className="card">
-          <h2 style={{ marginBottom: '20px', color: '#1f2937' }}>Rental Tracking</h2>
+      <div className="max-w-7xl mx-auto px-3 py-4 md:px-6 md:py-6">
+        <div className="glass-card">
+          <h2 className="text-2xl md:text-3xl font-bold text-gray-800 mb-6">📍 Rental Tracking</h2>
           
+          {/* Rental Selector */}
           {activeRentals.length > 1 && (
-            <div className="card" style={{ marginBottom: '20px' }}>
-              <h3 style={{ marginBottom: '16px', color: '#1f2937' }}>Select Rental to Track:</h3>
-              <div style={{ display: 'grid', gap: '8px' }}>
+            <div className="mb-6">
+              <h3 className="font-semibold text-gray-700 mb-3">Select Rental:</h3>
+              <div className="grid grid-cols-1 md:grid-cols-2 gap-3">
                 {activeRentals.map((rental) => (
                   <button
                     key={rental._id}
                     onClick={() => setSelectedRental(rental)}
-                    style={{
-                      padding: '12px',
-                      border: selectedRental?._id === rental._id ? '2px solid #667eea' : '1px solid #e5e7eb',
-                      borderRadius: '8px',
-                      background: selectedRental?._id === rental._id ? '#f0f9ff' : 'white',
-                      cursor: 'pointer',
-                      textAlign: 'left'
-                    }}
+                    className={`p-4 rounded-xl text-left transition-all ${
+                      selectedRental?._id === rental._id
+                        ? 'bg-indigo-500 text-white shadow-lg'
+                        : 'bg-white border-2 border-gray-200 hover:border-indigo-300'
+                    }`}
                   >
-                    ☂️ {rental.umbrella?.umbrellaId || 'Unknown'} - {rental.umbrella?.location?.address || 'Unknown location'}
+                    <div className="font-bold">☂️ {rental.umbrella?.umbrellaId}</div>
+                    <div className="text-sm opacity-90">{rental.umbrella?.location?.address}</div>
                   </button>
                 ))}
               </div>
             </div>
           )}
-          
-          <div style={{ display: 'grid', gridTemplateColumns: 'repeat(2, 1fr)', gap: '20px' }}>
-            <div>
-              <div className="card" style={{ background: '#f0f9ff', border: '1px solid #0ea5e9', marginBottom: '20px' }}>
-                <h3 style={{ color: '#0c4a6e', marginBottom: '12px' }}>Umbrella Details</h3>
-                <div style={{ marginBottom: '8px' }}>
-                  <strong>ID:</strong> {selectedRental?.umbrella?.umbrellaId || 'N/A'}
-                </div>
-                <div style={{ marginBottom: '8px' }}>
-                  <strong>Color:</strong> {selectedRental?.umbrella?.color || 'N/A'}
-                </div>
-                <div style={{ marginBottom: '8px' }}>
-                  <strong>Status:</strong> 
-                  <span style={{ 
-                    color: selectedRental?.unlocked ? '#10b981' : '#f59e0b',
-                    fontWeight: 'bold',
-                    marginLeft: '8px'
-                  }}>
-                    {selectedRental?.unlocked ? 'Unlocked' : 'Locked'}
-                  </span>
-                </div>
-              </div>
 
-              <div className="card" style={{ background: '#f0fdf4', border: '1px solid #10b981' }}>
-                <h3 style={{ color: '#065f46', marginBottom: '12px' }}>Time & Cost</h3>
-                <div style={{ fontSize: '1.5rem', fontWeight: 'bold', color: '#065f46', marginBottom: '8px' }}>
-                  {hours}h {minutes}m
+          {/* Main Content Grid */}
+          <div className="grid grid-cols-1 lg:grid-cols-3 gap-6 mb-6">
+            {/* Timer Card */}
+            <div className="bg-gradient-to-br from-purple-500 to-indigo-600 text-white rounded-xl p-6 shadow-xl">
+              <h3 className="text-lg font-semibold mb-4 opacity-90">⏱️ Duration</h3>
+              <div className="text-5xl font-bold mb-2">{hours}h {minutes}m</div>
+              <div className="text-sm opacity-90">Started: {selectedRental ? new Date(selectedRental.startTime).toLocaleTimeString() : 'N/A'}</div>
+            </div>
+
+            {/* Cost Card */}
+            <div className="bg-gradient-to-br from-green-500 to-emerald-600 text-white rounded-xl p-6 shadow-xl">
+              <h3 className="text-lg font-semibold mb-4 opacity-90">💰 Current Cost</h3>
+              <div className="text-5xl font-bold mb-2">₹{currentCost}</div>
+              <div className="text-sm opacity-90">₹7/hr • ₹70/day</div>
+            </div>
+
+            {/* Status Card */}
+            <div className={`rounded-xl p-6 shadow-xl ${
+              selectedRental?.unlocked 
+                ? 'bg-gradient-to-br from-green-500 to-emerald-600' 
+                : 'bg-gradient-to-br from-yellow-500 to-orange-600'
+            } text-white`}>
+              <h3 className="text-lg font-semibold mb-4 opacity-90">🔐 Status</h3>
+              <div className="text-3xl font-bold mb-2">
+                {selectedRental?.unlocked ? '✅ Unlocked' : '🔒 Locked'}
+              </div>
+              <div className="text-sm opacity-90">
+                {selectedRental?.unlocked ? 'Ready to use' : 'Pay to unlock'}
+              </div>
+            </div>
+          </div>
+
+          {/* Details Grid */}
+          <div className="grid grid-cols-1 lg:grid-cols-2 gap-6 mb-6">
+            {/* Umbrella Details */}
+            <div className="bg-white rounded-xl p-6 shadow-lg border-2 border-gray-200">
+              <h3 className="text-xl font-bold text-gray-800 mb-4">☂️ Umbrella Details</h3>
+              <div className="space-y-3">
+                <div className="flex justify-between items-center p-3 bg-blue-50 rounded-lg">
+                  <span className="text-gray-600">ID:</span>
+                  <span className="font-bold text-gray-800">{selectedRental?.umbrella?.umbrellaId || 'N/A'}</span>
                 </div>
-                <div style={{ marginBottom: '8px' }}>
-                  <strong>Started:</strong> {selectedRental ? new Date(selectedRental.startTime).toLocaleString() : 'N/A'}
+                <div className="flex justify-between items-center p-3 bg-purple-50 rounded-lg">
+                  <span className="text-gray-600">Color:</span>
+                  <span className="font-bold text-gray-800 capitalize">{selectedRental?.umbrella?.color || 'N/A'}</span>
                 </div>
-                <div style={{ fontSize: '1.2rem', fontWeight: 'bold', color: '#065f46' }}>
-                  Current Cost: ₹{currentCost}
+                <div className="flex justify-between items-center p-3 bg-green-50 rounded-lg">
+                  <span className="text-gray-600">Location:</span>
+                  <span className="font-bold text-gray-800 text-sm">{selectedRental?.umbrella?.location?.address || 'CU Campus'}</span>
                 </div>
               </div>
             </div>
 
-            <div className="card">
-              <h3 style={{ marginBottom: '16px', color: '#1f2937' }}>Location</h3>
-              <div style={{ marginBottom: '12px', padding: '8px 12px', background: '#f0f9ff', borderRadius: '6px' }}>
-                <strong>Address:</strong> {selectedRental?.umbrella?.location?.address || 'Chandigarh University Campus'}
-              </div>
-              <div style={{ marginBottom: '12px', padding: '8px 12px', background: '#f0fdf4', borderRadius: '6px' }}>
-                <strong>Coordinates:</strong> {selectedRental?.umbrella?.location?.latitude || 'N/A'}, {selectedRental?.umbrella?.location?.longitude || 'N/A'}
-              </div>
+            {/* Map */}
+            <div className="bg-white rounded-xl p-6 shadow-lg border-2 border-gray-200">
+              <h3 className="text-xl font-bold text-gray-800 mb-4">🗺️ Location Map</h3>
               <TrackingMap rental={selectedRental} />
             </div>
           </div>
 
-          <div className="card" style={{ marginTop: '20px' }}>
-            <h3 style={{ marginBottom: '16px', color: '#1f2937' }}>Actions</h3>
-            <div style={{ display: 'flex', gap: '12px', flexWrap: 'wrap' }}>
+          {/* Action Buttons */}
+          <div className="bg-gradient-to-r from-gray-50 to-gray-100 rounded-xl p-6 border-2 border-gray-200">
+            <h3 className="text-xl font-bold text-gray-800 mb-4">⚡ Quick Actions</h3>
+            <div className="flex flex-wrap gap-3">
               {selectedRental && !selectedRental.unlocked && (
                 <button 
-                  className="btn btn-primary"
-                  onClick={handlePayment}
+                  onClick={() => setShowPaymentModal(true)}
+                  className="flex-1 min-w-[200px] bg-gradient-to-r from-indigo-500 to-purple-600 text-white font-semibold py-3 px-6 rounded-lg shadow-lg hover:shadow-xl transition-all"
                 >
-                  Pay ₹{currentCost} & Unlock
-                </button>
-              )}
-              
-              {activeRentals.filter(r => !r.unlocked).length > 1 && (
-                <button 
-                  className="btn btn-success"
-                  onClick={handlePayAllRentals}
-                >
-                  Pay All ({activeRentals.filter(r => !r.unlocked).length})
+                  💳 Pay ₹{currentCost} & Unlock
                 </button>
               )}
               
               {selectedRental && selectedRental.unlocked && (
                 <button 
-                  className="btn"
-                  style={{ background: '#ef4444', color: 'white' }}
-                  onClick={handleEndRental}
+                  onClick={() => {
+                    setSelectedUmbrellasForDropOff([selectedRental._id]);
+                    setShowDropOffModal(true);
+                  }}
+                  className="flex-1 min-w-[200px] bg-gradient-to-r from-red-500 to-pink-600 text-white font-semibold py-3 px-6 rounded-lg shadow-lg hover:shadow-xl transition-all"
                 >
-                  End This Rental
-                </button>
-              )}
-              
-              {activeRentals.filter(r => r.unlocked).length > 1 && (
-                <button 
-                  className="btn"
-                  style={{ background: '#dc2626', color: 'white' }}
-                  onClick={handleEndMultipleRentals}
-                >
-                  End Multiple ({activeRentals.filter(r => r.unlocked).length})
+                  🏁 End Rental
                 </button>
               )}
               
               <button 
-                className="btn"
-                style={{ background: '#6b7280', color: 'white' }}
                 onClick={() => navigate('/dashboard')}
+                className="flex-1 min-w-[200px] bg-gray-600 text-white font-semibold py-3 px-6 rounded-lg shadow-lg hover:bg-gray-700 transition-all"
               >
-                Back to Dashboard
+                ← Back to Dashboard
               </button>
             </div>
           </div>
         </div>
-        
-        <PaymentModal />
-        <DropOffModal />
       </div>
+
+      {/* Payment Modal */}
+      {showPaymentModal && (
+        <div className="fixed inset-0 bg-black/50 flex items-center justify-center z-50 p-4">
+          <div className="glass-card max-w-md w-full">
+            <h3 className="text-2xl font-bold mb-4">💳 Select Payment Method</h3>
+            <div className="text-3xl font-bold text-indigo-600 mb-6">₹{calculateCurrentCost()}</div>
+            
+            <div className="space-y-3">
+              {[
+                { method: 'UPI', icon: '📱', color: 'from-green-500 to-emerald-600' },
+                { method: 'QR Code', icon: '📷', color: 'from-blue-500 to-indigo-600' },
+                { method: 'Card', icon: '💳', color: 'from-purple-500 to-pink-600' },
+                { method: 'Wallet', icon: '👛', color: 'from-yellow-500 to-orange-600' }
+              ].map(({ method, icon, color }) => (
+                <button
+                  key={method}
+                  onClick={() => processRentalPayment(method)}
+                  disabled={paymentLoading}
+                  className={`w-full p-4 rounded-lg text-left flex items-center gap-3 bg-gradient-to-r ${color} text-white font-semibold shadow-lg hover:shadow-xl transition-all disabled:opacity-50`}
+                >
+                  <span className="text-3xl">{icon}</span>
+                  <span>{method}</span>
+                </button>
+              ))}
+            </div>
+            
+            <button
+              onClick={() => setShowPaymentModal(false)}
+              className="w-full mt-4 bg-gray-600 text-white font-semibold py-3 rounded-lg hover:bg-gray-700 transition-all"
+            >
+              Cancel
+            </button>
+          </div>
+        </div>
+      )}
+
+      {/* Drop-off Modal */}
+      {showDropOffModal && (
+        <div className="fixed inset-0 bg-black/50 flex items-center justify-center z-50 p-4 overflow-y-auto">
+          <div className="glass-card max-w-2xl w-full my-8">
+            <h3 className="text-2xl font-bold mb-6">📍 Select Drop-off Location</h3>
+            
+            <div className="grid grid-cols-1 md:grid-cols-2 gap-3 mb-6">
+              {campusLocations.map((location) => (
+                <button
+                  key={location.name}
+                  onClick={() => setSelectedDropOffLocation(location)}
+                  className={`p-4 rounded-xl text-left transition-all ${
+                    selectedDropOffLocation?.name === location.name
+                      ? 'bg-indigo-500 text-white shadow-lg'
+                      : 'bg-white border-2 border-gray-200 hover:border-indigo-300'
+                  }`}
+                >
+                  <div className="font-bold flex items-center gap-2">
+                    <span>📍</span>
+                    {location.name}
+                  </div>
+                  <div className="text-sm opacity-90 mt-1">{location.address}</div>
+                </button>
+              ))}
+            </div>
+            
+            <div className="flex gap-3">
+              <button
+                onClick={confirmEndRental}
+                disabled={!selectedDropOffLocation}
+                className="flex-1 bg-gradient-to-r from-green-500 to-emerald-600 text-white font-semibold py-3 rounded-lg shadow-lg hover:shadow-xl transition-all disabled:opacity-50"
+              >
+                Drop Here
+              </button>
+              <button
+                onClick={() => {
+                  setShowDropOffModal(false);
+                  setSelectedDropOffLocation(null);
+                }}
+                className="flex-1 bg-gray-600 text-white font-semibold py-3 rounded-lg hover:bg-gray-700 transition-all"
+              >
+                Cancel
+              </button>
+            </div>
+          </div>
+        </div>
+      )}
     </div>
   );
 };
