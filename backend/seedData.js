@@ -81,7 +81,7 @@ const sampleUsers = [
 
 async function seedDatabase() {
   try {
-    await mongoose.connect(process.env.MONGODB_URI || 'mongodb+srv://palisettysanjaykumar_db_user:StPcfumQIOvDAEtS@urs.h9jrkne.mongodb.net/demo');
+    await mongoose.connect(process.env.MONGODB_URI);
     
     // Clear existing data
     await Promise.all([

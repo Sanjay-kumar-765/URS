@@ -1,19 +1,25 @@
 const mongoose = require('mongoose');
-const User = require('./models/User');
+require('dotenv').config();
 
-async function checkDB() {
+async function checkDatabase() {
   try {
-    await mongoose.connect('mongodb+srv://palisettysanjaykumar_db_user:StPcfumQIOvDAEtS@urs.h9jrkne.mongodb.net/demo');
+    await mongoose.connect(process.env.MONGODB_URI);
+    console.log('✅ Connected to MongoDB');
+    console.log('📊 Database:', mongoose.connection.db.databaseName);
     
-    const users = await User.find({});
-    console.log('Users in database:', users.length);
-    users.forEach(user => console.log('- Email:', user.email));
+    const collections = await mongoose.connection.db.listCollections().toArray();
+    console.log('\n📁 Collections:');
+    
+    for (const col of collections) {
+      const count = await mongoose.connection.db.collection(col.name).countDocuments();
+      console.log(`  - ${col.name}: ${count} documents`);
+    }
     
     process.exit(0);
   } catch (error) {
-    console.error('Error:', error);
+    console.error('❌ Error:', error);
     process.exit(1);
   }
 }
 
-checkDB();
+checkDatabase();
