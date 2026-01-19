@@ -15,15 +15,19 @@ const app = express();
 const server = createServer(app);
 const io = new Server(server, {
   cors: {
-    origin: "*",
-    methods: ["GET", "POST"]
+    origin: process.env.FRONTEND_URL || '*',
+    methods: ["GET", "POST"],
+    credentials: true
   }
 });
 
 // Make io available globally
 global.io = io;
 
-app.use(cors());
+app.use(cors({
+  origin: process.env.FRONTEND_URL || '*',
+  credentials: true
+}));
 app.use(express.json());
 
 mongoose.connect(process.env.MONGODB_URI, {
@@ -49,6 +53,7 @@ app.use('/api/rentals', rentalRoutes);
 
 const PORT = process.env.PORT || 5000;
 server.listen(PORT, '0.0.0.0', () => {
-  console.log(`Server running on http://192.168.0.103:${PORT}`);
-  console.log(`Access from phone: http://192.168.0.103:${PORT}/api`);
+  console.log(`✅ Server running on port ${PORT}`);
+  console.log(`🌍 Environment: ${process.env.NODE_ENV || 'development'}`);
+  console.log(`🔗 Frontend URL: ${process.env.FRONTEND_URL || 'Not set'}`);
 });

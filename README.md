@@ -2,6 +2,18 @@
 
 Fully responsive web application for umbrella rentals. Works perfectly on desktop, tablet, and mobile devices.
 
+## 🚀 Quick Deploy
+
+**📚 [All Docs](DOCS_INDEX.md)** | **⚡ [Vercel+Render](VERCEL_RENDER_DEPLOY.md)** | **📋 [Checklist](DEPLOYMENT_CHECKLIST.md)** | **🔧 [Troubleshooting](TROUBLESHOOTING.md)**
+
+### Deploy in 15 Minutes (Vercel + Render):
+1. MongoDB Atlas → Get connection string
+2. Render → Deploy backend with env vars
+3. Vercel → Deploy frontend with API URL
+4. Seed database: `node seedData.js`
+
+**See [VERCEL_RENDER_DEPLOY.md](VERCEL_RENDER_DEPLOY.md) for step-by-step.**
+
 ## 🚀 Quick Start
 
 **1. Start Backend:**
