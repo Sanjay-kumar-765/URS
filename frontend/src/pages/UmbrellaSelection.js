@@ -14,8 +14,7 @@ const UmbrellaSelection = () => {
   const [selectedLocation, setSelectedLocation] = useState('');
   const [selectedUmbrellas, setSelectedUmbrellas] = useState([]);
   const [loading, setLoading] = useState(true);
-  const [viewMode, setViewMode] = useState('grid'); // 'grid' or 'map'
-  const [sortBy, setSortBy] = useState('name'); // 'name', 'location', 'recent'
+  const [viewMode, setViewMode] = useState('grid');
 
   const colors = ['red', 'blue', 'yellow', 'black', 'green'];
   const umbrellaImages = {
@@ -28,8 +27,7 @@ const UmbrellaSelection = () => {
 
   const locations = [
     'Main Gate', 'Central Library', 'Engineering Block', 'Student Activity Center', 'Boys Hostel',
-    'Girls Hostel', 'Food Court', 'Sports Complex', 'Administrative Block', 'Medical Center',
-    'Computer Science Block', 'Main Auditorium', 'Parking Area', 'Faculty Residence', 'Business School'
+    'Girls Hostel', 'Food Court', 'Sports Complex', 'Administrative Block', 'Medical Center'
   ];
 
   useEffect(() => {
@@ -38,7 +36,7 @@ const UmbrellaSelection = () => {
 
   useEffect(() => {
     filterUmbrellas();
-  }, [umbrellas, selectedColor, selectedLocation, sortBy]);
+  }, [umbrellas, selectedColor, selectedLocation]);
 
   const fetchUmbrellas = async () => {
     try {
@@ -53,37 +51,14 @@ const UmbrellaSelection = () => {
 
   const filterUmbrellas = () => {
     let filtered = umbrellas.filter(u => u.isAvailable);
-    
-    if (selectedColor) {
-      filtered = filtered.filter(u => u.color === selectedColor);
-    }
-    
-    if (selectedLocation) {
-      filtered = filtered.filter(u => u.location?.address?.includes(selectedLocation));
-    }
-    
-    // Sort umbrellas
-    filtered.sort((a, b) => {
-      switch (sortBy) {
-        case 'name':
-          return a.umbrellaId.localeCompare(b.umbrellaId);
-        case 'location':
-          return (a.location?.address || '').localeCompare(b.location?.address || '');
-        case 'recent':
-          return new Date(b.updatedAt || b.createdAt) - new Date(a.updatedAt || a.createdAt);
-        default:
-          return 0;
-      }
-    });
-    
+    if (selectedColor) filtered = filtered.filter(u => u.color === selectedColor);
+    if (selectedLocation) filtered = filtered.filter(u => u.location?.address?.includes(selectedLocation));
     setFilteredUmbrellas(filtered);
   };
 
   const handleUmbrellaSelect = (umbrellaId) => {
     setSelectedUmbrellas(prev => 
-      prev.includes(umbrellaId) 
-        ? prev.filter(id => id !== umbrellaId)
-        : [...prev, umbrellaId]
+      prev.includes(umbrellaId) ? prev.filter(id => id !== umbrellaId) : [...prev, umbrellaId]
     );
   };
 
@@ -92,18 +67,14 @@ const UmbrellaSelection = () => {
       alert('Please select at least one umbrella');
       return;
     }
-
     if (!user?.depositMade) {
       alert('Please make a deposit first');
       navigate('/wallet');
       return;
     }
-
     try {
-      const response = await api.post('/rentals/start-multiple', { 
-        umbrellaIds: selectedUmbrellas 
-      });
-      alert(`${selectedUmbrellas.length} umbrella(s) rented! Proceed to payment.`);
+      await api.post('/rentals/start-multiple', { umbrellaIds: selectedUmbrellas });
+      alert(`${selectedUmbrellas.length} umbrella(s) rented!`);
       navigate('/tracking');
     } catch (error) {
       alert(error.response?.data?.message || 'Failed to start rental');
@@ -112,337 +83,201 @@ const UmbrellaSelection = () => {
 
   if (loading) {
     return (
-      <div>
+      <div className="min-h-screen">
         <Navbar />
-        <div className="container">
-          <div className="card text-center">
-            <div className="loading-spinner" style={{ margin: '0 auto 20px' }}></div>
-            <h2 style={{ color: '#667eea' }}>Hunting for umbrellas...</h2>
-            <p style={{ color: '#6b7280', marginTop: '8px' }}>Scouting the campus for the perfect ones! 🔍</p>
+        <div className="max-w-7xl mx-auto px-3 py-4 md:px-6 md:py-6">
+          <div className="glass-card text-center">
+            <div className="w-16 h-16 border-4 border-indigo-500 border-t-transparent rounded-full animate-spin mx-auto mb-4"></div>
+            <h2 className="text-2xl font-bold text-indigo-600">Finding umbrellas...</h2>
           </div>
         </div>
       </div>
     );
   }
 
+  const needsDeposit = !user?.depositMade;
+
   return (
-    <div>
+    <div className="min-h-screen">
       <Navbar />
-      <div className="container">
-        <div className="card">
-          <div style={{ display: 'flex', flexWrap: 'wrap', justifyContent: 'space-between', alignItems: 'center', marginBottom: '20px', gap: '12px' }}>
-            <h2 style={{ color: '#1f2937', margin: 0 }}>Available Umbrellas</h2>
-            <div style={{ display: 'flex', gap: '8px', alignItems: 'center', flexWrap: 'wrap' }}>
-              <div style={{ display: 'flex', gap: '4px', background: '#f3f4f6', borderRadius: '8px', padding: '4px' }}>
+      <div className="max-w-7xl mx-auto px-3 py-4 md:px-6 md:py-6">
+        <div className="glass-card">
+          {/* Header */}
+          <div className="flex flex-wrap justify-between items-center gap-4 mb-6">
+            <h2 className="text-2xl md:text-3xl font-bold text-gray-800">☂️ Available Umbrellas</h2>
+            <div className="flex flex-wrap gap-3 items-center">
+              {/* View Toggle */}
+              <div className="flex gap-1 bg-gray-100 rounded-lg p-1">
                 <button
                   onClick={() => setViewMode('grid')}
-                  style={{
-                    padding: '8px 16px',
-                    border: 'none',
-                    borderRadius: '6px',
-                    background: viewMode === 'grid' ? '#667eea' : 'transparent',
-                    color: viewMode === 'grid' ? 'white' : '#6b7280',
-                    cursor: 'pointer',
-                    fontSize: '14px'
-                  }}
+                  className={`px-4 py-2 rounded-md font-medium transition-all ${
+                    viewMode === 'grid' ? 'bg-indigo-500 text-white shadow' : 'text-gray-600 hover:text-gray-800'
+                  }`}
                 >
                   📋 Grid
                 </button>
                 <button
                   onClick={() => setViewMode('map')}
-                  style={{
-                    padding: '8px 16px',
-                    border: 'none',
-                    borderRadius: '6px',
-                    background: viewMode === 'map' ? '#667eea' : 'transparent',
-                    color: viewMode === 'map' ? 'white' : '#6b7280',
-                    cursor: 'pointer',
-                    fontSize: '14px'
-                  }}
+                  className={`px-4 py-2 rounded-md font-medium transition-all ${
+                    viewMode === 'map' ? 'bg-indigo-500 text-white shadow' : 'text-gray-600 hover:text-gray-800'
+                  }`}
                 >
                   🗺️ Map
                 </button>
               </div>
+              
+              {/* Cart Badge */}
               {selectedUmbrellas.length > 0 && (
                 <>
-                  <span style={{ 
-                    background: '#667eea', 
-                    color: 'white', 
-                    padding: '6px 12px', 
-                    borderRadius: '20px',
-                    fontSize: 'clamp(0.75rem, 2vw, 0.875rem)',
-                    fontWeight: '600',
-                    whiteSpace: 'nowrap'
-                  }}>
-                    {selectedUmbrellas.length} in cart
+                  <span className="bg-indigo-500 text-white px-4 py-2 rounded-full font-semibold">
+                    {selectedUmbrellas.length} selected
                   </span>
-                  <button className="btn btn-success" onClick={handleRentSelected} style={{ fontSize: 'clamp(0.75rem, 2vw, 0.875rem)' }}>
-                    Rent ({selectedUmbrellas.length})
+                  <button 
+                    onClick={handleRentSelected}
+                    className="bg-gradient-to-r from-green-500 to-emerald-600 text-white font-semibold py-2 px-6 rounded-lg shadow-lg hover:shadow-xl transition-all"
+                  >
+                    Rent Now
                   </button>
                 </>
               )}
             </div>
           </div>
-          
-          {!user?.depositMade && (
-            <div style={{ 
-              background: '#fef3c7', 
-              border: '1px solid #f59e0b', 
-              borderRadius: '8px', 
-              padding: '16px', 
-              marginBottom: '20px' 
-            }}>
-              <p style={{ color: '#92400e', marginBottom: '12px' }}>
-                ⚠️ Please make a deposit of ₹300 before renting an umbrella.
-              </p>
+
+          {/* Deposit Warning */}
+          {needsDeposit && (
+            <div className="bg-yellow-50 border-l-4 border-yellow-400 p-4 mb-6 rounded-lg">
+              <p className="text-yellow-800 font-medium mb-2">⚠️ Deposit Required</p>
+              <p className="text-yellow-700 text-sm mb-3">Add ₹300 to start renting umbrellas.</p>
               <button 
-                className="btn btn-primary"
                 onClick={() => navigate('/wallet')}
+                className="bg-yellow-500 text-white px-4 py-2 rounded-lg font-semibold hover:bg-yellow-600 transition-all"
               >
                 Make Deposit
               </button>
             </div>
           )}
 
-          <div style={{ marginBottom: '20px' }}>
-            <div style={{ marginBottom: '16px' }}>
-              <h3 style={{ marginBottom: '12px', color: '#374151' }}>Sort by:</h3>
-              <div style={{ display: 'flex', gap: '8px', flexWrap: 'wrap' }}>
-                {[
-                  { value: 'name', label: 'Name (A-Z)' },
-                  { value: 'location', label: 'Location' },
-                  { value: 'recent', label: 'Recently Added' }
-                ].map((option) => (
+          {/* Filters */}
+          <div className="grid grid-cols-1 md:grid-cols-2 gap-4 mb-6">
+            {/* Color Filter */}
+            <div>
+              <h3 className="font-semibold text-gray-700 mb-3">Filter by Color:</h3>
+              <div className="flex flex-wrap gap-2">
+                <button
+                  onClick={() => setSelectedColor('')}
+                  className={`px-4 py-2 rounded-full font-medium transition-all ${
+                    !selectedColor ? 'bg-indigo-500 text-white shadow-lg' : 'bg-white text-gray-700 border border-gray-300 hover:border-indigo-500'
+                  }`}
+                >
+                  All
+                </button>
+                {colors.map((color) => (
                   <button
-                    key={option.value}
-                    onClick={() => setSortBy(option.value)}
-                    style={{
-                      padding: '8px 16px',
-                      border: '1px solid #d1d5db',
-                      borderRadius: '20px',
-                      background: sortBy === option.value ? '#667eea' : 'white',
-                      color: sortBy === option.value ? 'white' : '#374151',
-                      cursor: 'pointer',
-                      fontSize: '12px'
-                    }}
+                    key={color}
+                    onClick={() => setSelectedColor(color)}
+                    className={`px-4 py-2 rounded-full font-medium capitalize transition-all ${
+                      selectedColor === color ? 'bg-indigo-500 text-white shadow-lg' : 'bg-white text-gray-700 border border-gray-300 hover:border-indigo-500'
+                    }`}
                   >
-                    {option.label}
+                    {color}
                   </button>
                 ))}
               </div>
             </div>
-            
-            <div className="grid grid-2" style={{ gap: '16px' }}>
-              <div>
-                <h3 style={{ marginBottom: '12px', color: '#374151' }}>Filter by Color:</h3>
-                <div style={{ display: 'flex', gap: '8px', flexWrap: 'wrap' }}>
-                  <button
-                    onClick={() => setSelectedColor('')}
-                    style={{
-                      padding: '8px 16px',
-                      border: '1px solid #d1d5db',
-                      borderRadius: '20px',
-                      background: !selectedColor ? '#667eea' : 'white',
-                      color: !selectedColor ? 'white' : '#374151',
-                      cursor: 'pointer',
-                      fontSize: '12px'
-                    }}
-                  >
-                    All Colors
-                  </button>
-                  {colors.map((color) => (
-                    <button
-                      key={color}
-                      onClick={() => setSelectedColor(color)}
-                      style={{
-                        padding: '8px 16px',
-                        border: '1px solid #d1d5db',
-                        borderRadius: '20px',
-                        background: selectedColor === color ? '#667eea' : 'white',
-                        color: selectedColor === color ? 'white' : '#374151',
-                        cursor: 'pointer',
-                        display: 'flex',
-                        alignItems: 'center',
-                        gap: '4px',
-                        fontSize: '12px'
-                      }}
-                    >
-                      {color.charAt(0).toUpperCase() + color.slice(1)}
-                    </button>
-                  ))}
-                </div>
-              </div>
-              
-              <div>
-                <h3 style={{ marginBottom: '12px', color: '#374151' }}>Select Location:</h3>
-                <div style={{ display: 'flex', gap: '8px', flexWrap: 'wrap' }}>
-                  <button
-                    onClick={() => setSelectedLocation('')}
-                    style={{
-                      padding: '8px 16px',
-                      border: '1px solid #d1d5db',
-                      borderRadius: '20px',
-                      background: !selectedLocation ? '#10b981' : 'white',
-                      color: !selectedLocation ? 'white' : '#374151',
-                      cursor: 'pointer',
-                      fontSize: '12px'
-                    }}
-                  >
-                    All Locations
-                  </button>
-                  {locations.slice(0, 8).map((location) => (
-                    <button
-                      key={location}
-                      onClick={() => setSelectedLocation(location)}
-                      style={{
-                        padding: '8px 16px',
-                        border: '1px solid #d1d5db',
-                        borderRadius: '20px',
-                        background: selectedLocation === location ? '#10b981' : 'white',
-                        color: selectedLocation === location ? 'white' : '#374151',
-                        cursor: 'pointer',
-                        fontSize: '12px'
-                      }}
-                    >
-                      {location}
-                    </button>
-                  ))}
-                </div>
-                <select
-                  value={selectedLocation}
-                  onChange={(e) => setSelectedLocation(e.target.value)}
-                  style={{
-                    marginTop: '8px',
-                    padding: '8px 12px',
-                    border: '1px solid #d1d5db',
-                    borderRadius: '8px',
-                    background: 'white',
-                    fontSize: '14px',
-                    width: '100%'
-                  }}
-                >
-                  <option value="">Select Location...</option>
-                  {locations.map((location) => (
-                    <option key={location} value={location}>{location}</option>
-                  ))}
-                </select>
-              </div>
+
+            {/* Location Filter */}
+            <div>
+              <h3 className="font-semibold text-gray-700 mb-3">Filter by Location:</h3>
+              <select
+                value={selectedLocation}
+                onChange={(e) => setSelectedLocation(e.target.value)}
+                className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-indigo-500 bg-white"
+              >
+                <option value="">All Locations</option>
+                {locations.map((location) => (
+                  <option key={location} value={location}>{location}</option>
+                ))}
+              </select>
             </div>
           </div>
 
+          {/* Umbrellas Grid or Map */}
           {viewMode === 'map' ? (
             <MapView 
               umbrellas={filteredUmbrellas}
               selectedUmbrellas={selectedUmbrellas}
               onUmbrellaSelect={handleUmbrellaSelect}
             />
+          ) : filteredUmbrellas.length === 0 ? (
+            <div className="text-center py-12 bg-gray-50 rounded-xl">
+              <div className="text-6xl mb-4">☂️</div>
+              <h3 className="text-xl font-semibold text-gray-700 mb-2">No Umbrellas Available</h3>
+              <p className="text-gray-500">Try different filters or check back later!</p>
+            </div>
           ) : (
-            filteredUmbrellas.length === 0 ? (
-              <div className="card text-center" style={{ background: '#f9fafb' }}>
-                <h3 style={{ color: '#6b7280', marginBottom: '8px' }}>No Umbrellas Available</h3>
-                <p style={{ color: '#6b7280' }}>
-                  {selectedColor || selectedLocation 
-                    ? `Hmm, no ${selectedColor || ''} umbrellas ${selectedLocation ? `at ${selectedLocation}` : ''} available. Try different filters?` 
-                    : 'Looks like everyone beat you to it! All umbrellas are out having adventures 🌧️'}
-                </p>
-                <button 
-                  onClick={() => { setSelectedColor(''); setSelectedLocation(''); }}
-                  style={{
-                    marginTop: '12px',
-                    padding: '8px 16px',
-                    background: '#667eea',
-                    color: 'white',
-                    border: 'none',
-                    borderRadius: '8px',
-                    cursor: 'pointer'
-                  }}
+            <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
+              {filteredUmbrellas.map((umbrella) => (
+                <div 
+                  key={umbrella._id}
+                  onClick={() => umbrella.isAvailable && handleUmbrellaSelect(umbrella._id)}
+                  className={`bg-white rounded-xl p-5 shadow-lg border-2 transition-all cursor-pointer hover:shadow-xl hover:-translate-y-1 ${
+                    selectedUmbrellas.includes(umbrella._id) 
+                      ? 'border-indigo-500 bg-indigo-50' 
+                      : 'border-gray-200 hover:border-indigo-300'
+                  }`}
                 >
-                  Clear Filters
-                </button>
-              </div>
-            ) : (
-              <div className="grid grid-2">
-                {filteredUmbrellas.map((umbrella) => (
-                  <div 
-                    key={umbrella._id} 
-                    className="card" 
-                    style={{ 
-                      border: selectedUmbrellas.includes(umbrella._id) 
-                        ? '2px solid #667eea' 
-                        : umbrella.isAvailable ? '1px solid #10b981' : '1px solid #e5e7eb',
-                      cursor: 'pointer',
-                      background: selectedUmbrellas.includes(umbrella._id) 
-                        ? '#f0f9ff'
-                        : 'white'
-                    }}
-                    onClick={() => umbrella.isAvailable && handleUmbrellaSelect(umbrella._id)}
-                  >
-                    <div style={{ textAlign: 'center', marginBottom: '16px' }}>
-                      <img 
-                        src={umbrellaImages[umbrella.color]} 
-                        alt={`${umbrella.color} umbrella`}
-                        style={{ width: '80px', height: '80px', marginBottom: '12px' }}
-                      />
-                      <h3 style={{ color: '#1f2937', marginBottom: '4px' }}>
-                        {umbrella.umbrellaId}
-                      </h3>
-                      <div style={{ color: '#6b7280', textTransform: 'capitalize', fontWeight: '600' }}>
-                        {umbrella.color} Umbrella
-                      </div>
-                    </div>
-                    <div style={{ display: 'flex', justifyContent: 'flex-end', marginBottom: '16px' }}>
-                      <div className={umbrella.isAvailable ? 'status-badge status-available' : 'status-badge status-rented'}>
-                        {umbrella.isAvailable ? '✅ Available' : '❌ Rented'}
-                      </div>
-                    </div>
-
-                    <div style={{ marginBottom: '16px' }}>
-                      <div style={{ fontSize: '0.875rem', color: '#6b7280', marginBottom: '4px' }}>
-                        📍 Hanging out at
-                      </div>
-                      <div style={{ fontSize: '0.875rem', color: '#374151' }}>
-                        {umbrella.location?.address || 'Chandigarh University'}
-                      </div>
-                    </div>
-
-                    <div style={{ 
-                      background: '#f8fafc', 
-                      padding: '12px', 
-                      borderRadius: '8px', 
-                      marginBottom: '16px' 
-                    }}>
-                      <div style={{ fontSize: '0.875rem', color: '#6b7280', marginBottom: '4px' }}>
-                        💰 Super affordable!
-                      </div>
-                      <div style={{ fontSize: '0.875rem', color: '#374151' }}>
-                        Just ₹7/hour • Full day? Only ₹70!
-                      </div>
-                    </div>
-
-                    <div style={{ display: 'flex', gap: '8px', alignItems: 'center' }}>
-                      <input
-                        type="checkbox"
-                        checked={selectedUmbrellas.includes(umbrella._id)}
-                        onChange={() => handleUmbrellaSelect(umbrella._id)}
-                        disabled={!umbrella.isAvailable || !user?.depositMade}
-                        style={{
-                          width: '20px',
-                          height: '20px',
-                          accentColor: '#667eea'
-                        }}
-                      />
-                      <span style={{ 
-                        fontSize: '14px', 
-                        color: selectedUmbrellas.includes(umbrella._id) ? '#667eea' : '#6b7280',
-                        fontWeight: selectedUmbrellas.includes(umbrella._id) ? '600' : '400'
-                      }}>
-                        {selectedUmbrellas.includes(umbrella._id) ? 'Selected' : 'Select'}
-                      </span>
-                    </div>
+                  {/* Umbrella Image */}
+                  <div className="text-center mb-4">
+                    <img 
+                      src={umbrellaImages[umbrella.color]} 
+                      alt={umbrella.color}
+                      className="w-20 h-20 mx-auto mb-3"
+                    />
+                    <h3 className="text-lg font-bold text-gray-800">{umbrella.umbrellaId}</h3>
+                    <p className="text-sm text-gray-600 capitalize font-medium">{umbrella.color} Umbrella</p>
                   </div>
-                ))}
-              </div>
-            )
+
+                  {/* Status Badge */}
+                  <div className="flex justify-center mb-4">
+                    <span className={`px-3 py-1 rounded-full text-xs font-semibold ${
+                      umbrella.isAvailable 
+                        ? 'bg-green-100 text-green-700' 
+                        : 'bg-red-100 text-red-700'
+                    }`}>
+                      {umbrella.isAvailable ? '✅ Available' : '❌ Rented'}
+                    </span>
+                  </div>
+
+                  {/* Location */}
+                  <div className="bg-gray-50 rounded-lg p-3 mb-4">
+                    <p className="text-xs text-gray-500 mb-1">📍 Location</p>
+                    <p className="text-sm text-gray-700 font-medium">{umbrella.location?.address || 'CU Campus'}</p>
+                  </div>
+
+                  {/* Pricing */}
+                  <div className="bg-gradient-to-r from-indigo-50 to-purple-50 rounded-lg p-3 mb-4">
+                    <p className="text-xs text-gray-600 mb-1">💰 Pricing</p>
+                    <p className="text-sm font-bold text-indigo-600">₹7/hr • ₹70/day</p>
+                  </div>
+
+                  {/* Select Checkbox */}
+                  <div className="flex items-center justify-center gap-2">
+                    <input
+                      type="checkbox"
+                      checked={selectedUmbrellas.includes(umbrella._id)}
+                      onChange={() => handleUmbrellaSelect(umbrella._id)}
+                      disabled={!umbrella.isAvailable || needsDeposit}
+                      className="w-5 h-5 accent-indigo-500"
+                    />
+                    <span className={`font-semibold ${
+                      selectedUmbrellas.includes(umbrella._id) ? 'text-indigo-600' : 'text-gray-600'
+                    }`}>
+                      {selectedUmbrellas.includes(umbrella._id) ? 'Selected' : 'Select'}
+                    </span>
+                  </div>
+                </div>
+              ))}
+            </div>
           )}
         </div>
       </div>

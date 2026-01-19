@@ -68,132 +68,195 @@ const Profile = () => {
   };
 
   return (
-    <div>
+    <div className="min-h-screen">
       <Navbar />
-      <div className="container">
-        <div className="card">
-          <h2 style={{ marginBottom: '20px', color: '#1f2937' }}>My Profile</h2>
-          
-          <div className="grid grid-2">
-            <div className="card" style={{ background: '#f8fafc' }}>
-              <h3 style={{ color: '#374151', marginBottom: '16px' }}>Account Information</h3>
+      <div className="max-w-6xl mx-auto px-3 py-4 md:px-6 md:py-6">
+        {/* Profile Header */}
+        <div className="glass-card mb-6">
+          <div className="flex flex-col md:flex-row items-center gap-6">
+            <div className="w-24 h-24 bg-gradient-to-br from-indigo-500 to-purple-600 rounded-full flex items-center justify-center text-white text-4xl font-bold shadow-xl">
+              {user?.email?.charAt(0).toUpperCase()}
+            </div>
+            <div className="text-center md:text-left flex-1">
+              <h1 className="text-3xl font-bold text-gray-800 mb-2">{user?.email?.split('@')[0]}</h1>
+              <p className="text-gray-600">{user?.email}</p>
+              <div className="flex flex-wrap gap-2 mt-3 justify-center md:justify-start">
+                <span className="px-3 py-1 bg-indigo-100 text-indigo-700 rounded-full text-sm font-semibold">
+                  {user?.googleId ? '🔗 Google Account' : '📧 Email Account'}
+                </span>
+                <span className="px-3 py-1 bg-green-100 text-green-700 rounded-full text-sm font-semibold">
+                  ✅ Member since {user?.createdAt ? new Date(user.createdAt).toLocaleDateString() : 'N/A'}
+                </span>
+              </div>
+            </div>
+          </div>
+        </div>
+
+        <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
+          {/* Account Info */}
+          <div className="lg:col-span-2">
+            <div className="glass-card">
+              <div className="flex justify-between items-center mb-6">
+                <h2 className="text-2xl font-bold text-gray-800">👤 Account Information</h2>
+                {!editing && (
+                  <button 
+                    onClick={() => setEditing(true)}
+                    className="bg-indigo-500 text-white px-4 py-2 rounded-lg font-semibold hover:bg-indigo-600 transition-all"
+                  >
+                    ✏️ Edit
+                  </button>
+                )}
+              </div>
               
               {!editing ? (
-                <div>
-                  <div style={{ marginBottom: '12px' }}>
-                    <strong>Email:</strong> {user?.email || 'Not provided'}
-                  </div>
-                  <div style={{ marginBottom: '12px' }}>
-                    <strong>Phone:</strong> {user?.phone || 'Not provided'}
-                  </div>
-                  <div style={{ marginBottom: '12px' }}>
-                    <strong>Member Since:</strong> {user?.createdAt ? new Date(user.createdAt).toLocaleDateString('en-GB') : 'Unknown'}
-                  </div>
-                  <div style={{ marginBottom: '16px' }}>
-                    <strong>Account Type:</strong> {user?.googleId ? 'Google Account' : 'Email Account'}
+                <div className="space-y-4">
+                  <div className="bg-gradient-to-r from-blue-50 to-indigo-50 rounded-xl p-4 border border-blue-200">
+                    <p className="text-sm text-gray-600 mb-1">📧 Email Address</p>
+                    <p className="text-lg font-semibold text-gray-800">{user?.email || 'Not provided'}</p>
                   </div>
                   
-                  <button 
-                    className="btn btn-primary"
-                    onClick={() => setEditing(true)}
-                  >
-                    Edit Profile
-                  </button>
+                  <div className="bg-gradient-to-r from-green-50 to-emerald-50 rounded-xl p-4 border border-green-200">
+                    <p className="text-sm text-gray-600 mb-1">📱 Phone Number</p>
+                    <p className="text-lg font-semibold text-gray-800">{user?.phone || 'Not provided'}</p>
+                  </div>
+                  
+                  <div className="bg-gradient-to-r from-purple-50 to-pink-50 rounded-xl p-4 border border-purple-200">
+                    <p className="text-sm text-gray-600 mb-1">🎂 Member Since</p>
+                    <p className="text-lg font-semibold text-gray-800">
+                      {user?.createdAt ? new Date(user.createdAt).toLocaleDateString('en-GB') : 'Unknown'}
+                    </p>
+                  </div>
                 </div>
               ) : (
-                <form onSubmit={handleUpdate}>
-                  <input
-                    type="email"
-                    placeholder="Email"
-                    className="input"
-                    value={formData.email}
-                    onChange={(e) => setFormData({...formData, email: e.target.value})}
-                    required
-                  />
+                <form onSubmit={handleUpdate} className="space-y-4">
+                  <div>
+                    <label className="block text-sm font-semibold text-gray-700 mb-2">Email</label>
+                    <input
+                      type="email"
+                      className="input-field"
+                      value={formData.email}
+                      onChange={(e) => setFormData({...formData, email: e.target.value})}
+                      required
+                    />
+                  </div>
                   
-                  <input
-                    type="tel"
-                    placeholder="Phone Number"
-                    className="input"
-                    value={formData.phone}
-                    onChange={(e) => setFormData({...formData, phone: e.target.value})}
-                  />
+                  <div>
+                    <label className="block text-sm font-semibold text-gray-700 mb-2">Phone Number</label>
+                    <input
+                      type="tel"
+                      className="input-field"
+                      value={formData.phone}
+                      onChange={(e) => setFormData({...formData, phone: e.target.value})}
+                    />
+                  </div>
                   
                   {!user?.googleId && (
                     <>
-                      <input
-                        type="password"
-                        placeholder="Current Password (required to change password)"
-                        className="input"
-                        value={formData.currentPassword}
-                        onChange={(e) => setFormData({...formData, currentPassword: e.target.value})}
-                      />
+                      <div>
+                        <label className="block text-sm font-semibold text-gray-700 mb-2">Current Password</label>
+                        <input
+                          type="password"
+                          className="input-field"
+                          placeholder="Required to change password"
+                          value={formData.currentPassword}
+                          onChange={(e) => setFormData({...formData, currentPassword: e.target.value})}
+                        />
+                      </div>
                       
-                      <input
-                        type="password"
-                        placeholder="New Password (leave blank to keep current)"
-                        className="input"
-                        value={formData.newPassword}
-                        onChange={(e) => setFormData({...formData, newPassword: e.target.value})}
-                      />
+                      <div>
+                        <label className="block text-sm font-semibold text-gray-700 mb-2">New Password</label>
+                        <input
+                          type="password"
+                          className="input-field"
+                          placeholder="Leave blank to keep current"
+                          value={formData.newPassword}
+                          onChange={(e) => setFormData({...formData, newPassword: e.target.value})}
+                        />
+                      </div>
                     </>
                   )}
                   
-                  <div style={{ display: 'flex', gap: '12px' }}>
-                    <button type="submit" className="btn btn-primary" disabled={loading}>
-                      {loading ? 'Updating...' : 'Save Changes'}
+                  <div className="flex gap-3">
+                    <button 
+                      type="submit" 
+                      className="flex-1 bg-gradient-to-r from-indigo-500 to-purple-600 text-white font-semibold py-3 px-6 rounded-lg shadow-lg hover:shadow-xl transition-all"
+                      disabled={loading}
+                    >
+                      {loading ? 'Saving...' : '💾 Save Changes'}
                     </button>
                     <button 
-                      type="button" 
-                      className="btn" 
-                      style={{ background: '#6b7280', color: 'white' }}
+                      type="button"
                       onClick={() => setEditing(false)}
+                      className="flex-1 bg-gray-500 text-white font-semibold py-3 px-6 rounded-lg hover:bg-gray-600 transition-all"
                     >
-                      Cancel
+                      ❌ Cancel
                     </button>
                   </div>
                 </form>
               )}
             </div>
+          </div>
 
-            <div className="card" style={{ background: '#f0fdf4' }}>
-              <h3 style={{ color: '#065f46', marginBottom: '16px' }}>Wallet & Activity</h3>
-              
-              <div style={{ marginBottom: '12px' }}>
-                <strong>Wallet Balance:</strong> ₹{user?.walletBalance || 0}
+          {/* Stats Sidebar */}
+          <div className="space-y-6">
+            {/* Wallet Card */}
+            <div className="glass-card bg-gradient-to-br from-green-50 to-emerald-50 border-2 border-green-200">
+              <h3 className="text-xl font-bold text-green-800 mb-4">💰 Wallet</h3>
+              <div className="text-4xl font-bold text-green-600 mb-4">
+                ₹{user?.walletBalance || 0}
               </div>
-              <div style={{ marginBottom: '12px' }}>
-                <strong>Deposit Made:</strong> {user?.depositMade ? 'Yes' : 'No'}
+              <div className="space-y-2 mb-4">
+                <div className="flex justify-between text-sm">
+                  <span className="text-gray-600">Deposit Made:</span>
+                  <span className={`font-semibold ${user?.depositMade ? 'text-green-600' : 'text-red-600'}`}>
+                    {user?.depositMade ? '✅ Yes' : '❌ No'}
+                  </span>
+                </div>
+                <div className="flex justify-between text-sm">
+                  <span className="text-gray-600">Cashback:</span>
+                  <span className={`font-semibold ${user?.cashbackReceived ? 'text-green-600' : 'text-gray-400'}`}>
+                    {user?.cashbackReceived ? '✅ Received' : '⏳ Pending'}
+                  </span>
+                </div>
               </div>
-              <div style={{ marginBottom: '12px' }}>
-                <strong>Cashback Received:</strong> {user?.cashbackReceived ? 'Yes' : 'No'}
-              </div>
-              <div style={{ marginBottom: '16px' }}>
-                <strong>Total Rentals:</strong> {user?.rentalHistory?.length || 0}
-              </div>
-              
               <button 
-                className="btn btn-success"
                 onClick={() => navigate('/wallet')}
+                className="w-full bg-green-500 text-white font-semibold py-2 px-4 rounded-lg hover:bg-green-600 transition-all"
               >
                 Manage Wallet
               </button>
             </div>
-          </div>
 
-          <div className="card" style={{ background: '#fef2f2', border: '1px solid #fecaca', marginTop: '20px' }}>
-            <h3 style={{ color: '#dc2626', marginBottom: '16px' }}>Danger Zone</h3>
-            <p style={{ color: '#7f1d1d', marginBottom: '16px' }}>
-              Once you delete your account, there is no going back. Please be certain.
-            </p>
-            
-            <button 
-              className="btn"
-              style={{ background: '#dc2626', color: 'white' }}
-              onClick={handleDeleteAccount}
-            >
-              Delete Account
-            </button>
+            {/* Activity Card */}
+            <div className="glass-card bg-gradient-to-br from-blue-50 to-indigo-50 border-2 border-blue-200">
+              <h3 className="text-xl font-bold text-blue-800 mb-4">📊 Activity</h3>
+              <div className="space-y-3">
+                <div className="bg-white rounded-lg p-3 shadow">
+                  <p className="text-sm text-gray-600">Total Rentals</p>
+                  <p className="text-2xl font-bold text-blue-600">{user?.rentalHistory?.length || 0}</p>
+                </div>
+                <button 
+                  onClick={() => navigate('/dashboard')}
+                  className="w-full bg-blue-500 text-white font-semibold py-2 px-4 rounded-lg hover:bg-blue-600 transition-all"
+                >
+                  View History
+                </button>
+              </div>
+            </div>
+
+            {/* Danger Zone */}
+            <div className="glass-card bg-gradient-to-br from-red-50 to-pink-50 border-2 border-red-200">
+              <h3 className="text-xl font-bold text-red-800 mb-3">⚠️ Danger Zone</h3>
+              <p className="text-sm text-red-700 mb-4">
+                Deleting your account is permanent and cannot be undone.
+              </p>
+              <button 
+                onClick={handleDeleteAccount}
+                className="w-full bg-red-500 text-white font-semibold py-2 px-4 rounded-lg hover:bg-red-600 transition-all"
+              >
+                🗑️ Delete Account
+              </button>
+            </div>
           </div>
         </div>
       </div>
